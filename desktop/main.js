@@ -14,8 +14,8 @@ function createWindow() {
     }
   });
 
-  // Load the local development server URL
-  win.loadURL('http://localhost:3005');
+  // Load the live hosted URL
+  win.loadURL('https://nexrume.vercel.app');
 
   // Prevent title updates from resetting browser name
   win.on('page-title-updated', (e) => e.preventDefault());
