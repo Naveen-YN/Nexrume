@@ -1,0 +1,9 @@
+{
+  "appId": "com.nexrume.app",
+  "appName": "Nexrume",
+  "webDir": "public",
+  "server": {
+    "url": "http://10.0.2.2:3005",
+    "cleartext": true
+  }
+}
