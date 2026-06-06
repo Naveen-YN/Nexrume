@@ -853,6 +853,24 @@ export default function Home() {
     }
   }, [activeTab, isSettingsEditMode, userProfile]);
 
+  const handleProfilePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image is too large. Please select an image smaller than 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setTempProfile((prev: any) => ({ ...prev, profilePhoto: reader.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Edit Modal Accordion active sections
   const [openEditSections, setOpenEditSections] = useState<Record<string, boolean>>({
     'job-details': true,
@@ -6236,22 +6254,45 @@ export default function Home() {
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* Profile Photo URL */}
+                            {/* Profile Photo Uploader */}
                             <div className="col-span-full">
-                              <label className="text-zinc-500 block mb-1">Profile Photo URL</label>
-                              {isSettingsEditMode ? (
-                                <input 
-                                  type="text" 
-                                  value={tempProfile.profilePhoto || ''} 
-                                  onChange={(e) => setTempProfile({ ...tempProfile, profilePhoto: e.target.value })}
-                                  placeholder="e.g. https://images.unsplash.com/..."
-                                  className="bg-zinc-955 border border-zinc-850 text-zinc-205 w-full p-2.5 rounded-lg outline-none focus:border-indigo-500 transition"
+                              <label className="text-zinc-500 block mb-1">Profile Photo</label>
+                              <div className="flex flex-col sm:flex-row items-center gap-4 bg-zinc-955/20 border border-zinc-850/60 p-4 rounded-2xl">
+                                <img 
+                                  src={tempProfile.profilePhoto || userProfile.profilePhoto || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=120"} 
+                                  alt="Preview"
+                                  className="w-16 h-16 rounded-full border border-zinc-800 object-cover shrink-0"
                                 />
-                              ) : (
-                                <div className="bg-zinc-950/20 border border-zinc-850/50 p-2.5 rounded-lg text-zinc-300 font-medium truncate">
-                                  {userProfile.profilePhoto || 'Not Added'}
+                                <div className="flex flex-col gap-2 w-full sm:w-auto">
+                                  {isSettingsEditMode ? (
+                                    <div className="flex flex-wrap gap-2">
+                                      <label className="bg-indigo-650 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-xl text-xs transition cursor-pointer select-none text-center">
+                                        Upload Image
+                                        <input 
+                                          type="file" 
+                                          accept="image/*" 
+                                          className="hidden" 
+                                          onChange={handleProfilePhotoUpload} 
+                                        />
+                                      </label>
+                                      {tempProfile.profilePhoto && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setTempProfile({ ...tempProfile, profilePhoto: '' })}
+                                          className="bg-zinc-850 hover:bg-zinc-750 text-zinc-400 hover:text-rose-455 font-bold py-2 px-4 border border-zinc-800 rounded-xl text-xs transition cursor-pointer"
+                                        >
+                                          Remove
+                                        </button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="text-[10px] text-zinc-500 font-medium font-mono truncate max-w-xs sm:max-w-md">
+                                      {userProfile.profilePhoto ? 'Custom Uploaded Photo' : 'Default Avatar'}
+                                    </div>
+                                  )}
+                                  <p className="text-[9.5px] text-zinc-500">Supports PNG, JPG, or GIF (max 2MB).</p>
                                 </div>
-                              )}
+                              </div>
                             </div>
 
                             {/* Full Name */}
@@ -6263,7 +6304,7 @@ export default function Home() {
                                   value={tempProfile.name || ''} 
                                   onChange={(e) => setTempProfile({ ...tempProfile, name: e.target.value })}
                                   placeholder="e.g. Naveen Kumar"
-                                  className="bg-zinc-955 border border-zinc-850 text-zinc-205 w-full p-2.5 rounded-lg outline-none focus:border-indigo-500 transition"
+                                  className="bg-zinc-955 border border-zinc-850 text-zinc-200 w-full p-2.5 rounded-lg outline-none focus:border-indigo-500 transition"
                                 />
                               ) : (
                                 <div className="bg-zinc-950/20 border border-zinc-850/50 p-2.5 rounded-lg text-zinc-300 font-medium">{userProfile.name || 'Not Added'}</div>
@@ -6279,7 +6320,7 @@ export default function Home() {
                                   value={tempProfile.email || ''} 
                                   onChange={(e) => setTempProfile({ ...tempProfile, email: e.target.value })}
                                   placeholder="e.g. naveen@nexora.ai"
-                                  className="bg-zinc-955 border border-zinc-855 text-zinc-205 w-full p-2.5 rounded-lg outline-none focus:border-indigo-500 transition"
+                                  className="bg-zinc-955 border border-zinc-850 text-zinc-200 w-full p-2.5 rounded-lg outline-none focus:border-indigo-500 transition"
                                 />
                               ) : (
                                 <div className="bg-zinc-950/20 border border-zinc-850/50 p-2.5 rounded-lg text-zinc-300 font-medium">{userProfile.email || 'Not Added'}</div>
@@ -6295,7 +6336,7 @@ export default function Home() {
                                   value={tempProfile.phone || ''} 
                                   onChange={(e) => setTempProfile({ ...tempProfile, phone: e.target.value })}
                                   placeholder="e.g. +91 98765 43210"
-                                  className="bg-zinc-955 border border-zinc-855 text-zinc-205 w-full p-2.5 rounded-lg outline-none focus:border-indigo-500 transition"
+                                  className="bg-zinc-955 border border-zinc-850 text-zinc-200 w-full p-2.5 rounded-lg outline-none focus:border-indigo-500 transition"
                                 />
                               ) : (
                                 <div className="bg-zinc-950/20 border border-zinc-850/50 p-2.5 rounded-lg text-zinc-300 font-medium">{userProfile.phone || 'Not Added'}</div>
@@ -6311,10 +6352,26 @@ export default function Home() {
                                   value={tempProfile.location || ''} 
                                   onChange={(e) => setTempProfile({ ...tempProfile, location: e.target.value })}
                                   placeholder="e.g. Bangalore, India"
-                                  className="bg-zinc-955 border border-zinc-855 text-zinc-205 w-full p-2.5 rounded-lg outline-none focus:border-indigo-500 transition"
+                                  className="bg-zinc-955 border border-zinc-850 text-zinc-200 w-full p-2.5 rounded-lg outline-none focus:border-indigo-500 transition"
                                 />
                               ) : (
                                 <div className="bg-zinc-950/20 border border-zinc-850/50 p-2.5 rounded-lg text-zinc-300 font-medium">{userProfile.location || 'Not Added'}</div>
+                              )}
+                            </div>
+
+                            {/* Years of Experience */}
+                            <div>
+                              <label className="text-zinc-550 block mb-1">Years of Experience</label>
+                              {isSettingsEditMode ? (
+                                <input 
+                                  type="text" 
+                                  value={tempProfile.experience || ''} 
+                                  onChange={(e) => setTempProfile({ ...tempProfile, experience: e.target.value })}
+                                  placeholder="e.g. 4 Years"
+                                  className="bg-zinc-955 border border-zinc-850 text-zinc-200 w-full p-2.5 rounded-lg outline-none focus:border-indigo-500 transition"
+                                />
+                              ) : (
+                                <div className="bg-zinc-950/20 border border-zinc-850/50 p-2.5 rounded-lg text-zinc-300 font-medium">{userProfile.experience || 'Not Added'}</div>
                               )}
                             </div>
 
