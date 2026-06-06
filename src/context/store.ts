@@ -191,6 +191,7 @@ interface AppState {
   // Resume Actions
   updateResume: (id: string, updates: Partial<ResumeVersion>) => void;
   addResumeVersion: (name: string, template: ResumeVersion['template']) => void;
+  deleteResume: (id: string) => void;
 
   // Recruiter Actions
   addRecruiter: (rec: Omit<RecruiterContact, 'id' | 'history'>) => void;
@@ -887,6 +888,13 @@ export const useAppStore = create<AppState>()(
           footerPageNumbers: true
         };
         return { resumes: [...state.resumes, newResume] };
+      }),
+
+      deleteResume: (id) => set((state) => {
+        const remaining = state.resumes.filter(r => r.id !== id);
+        return {
+          resumes: remaining
+        };
       }),
 
       // Recruiter Actions

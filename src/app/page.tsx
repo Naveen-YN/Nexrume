@@ -579,6 +579,7 @@ export default function Home() {
     deleteApplication,
     updateResume,
     addResumeVersion,
+    deleteResume,
     addRecruiter,
     updateRecruiter,
     deleteRecruiter,
@@ -4597,6 +4598,26 @@ export default function Home() {
                           />
                           <span>Public</span>
                         </label>
+                        <div className="h-4 w-px bg-zinc-800 mt-4.5"></div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Are you sure you want to delete "${activeResume.name}"? This cannot be undone.`)) {
+                              const remaining = resumes.filter(r => r.id !== activeResume.id);
+                              deleteResume(activeResume.id);
+                              if (remaining.length > 0) {
+                                setSelectedResumeId(remaining[0].id);
+                              } else {
+                                setSelectedResumeId('');
+                              }
+                            }
+                          }}
+                          className="flex items-center gap-1 text-rose-500 hover:text-rose-400 font-bold hover:bg-rose-955/20 px-2 py-1 rounded-lg transition mt-4.5 cursor-pointer"
+                          title="Delete this resume version"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete</span>
+                        </button>
                       </div>
                     </div>
 
