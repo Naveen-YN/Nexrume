@@ -5,6 +5,116 @@ import { google } from 'googleapis';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-jwt-secret';
 
+// GET: Reads applications from Google Sheets for merging
+export async function GET(req: NextRequest) {
+  const sessionCookie = req.cookies.get('nexrume-session');
+
+  if (!sessionCookie) {
+    return NextResponse.json({ error: 'unauthorized', message: 'No active session cookie found.' }, { status: 401 });
+  }
+
+  try {
+    const session = jwt.verify(sessionCookie.value, JWT_SECRET) as any;
+    const tokens = session.tokens;
+
+    if (!tokens || !tokens.access_token) {
+      return NextResponse.json({ error: 'unauthorized', message: 'No Google OAuth tokens found in session. Please log in with Google.' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const spreadsheetId = searchParams.get('spreadsheetId');
+    const tabName = searchParams.get('tabName') || 'Sheet1';
+
+    if (!spreadsheetId) {
+      return NextResponse.json({ error: 'bad_request', message: 'spreadsheetId query parameter is required.' }, { status: 400 });
+    }
+
+    const oauth2Client = getOAuthClient(tokens);
+    const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
+
+    // Read the values from the sheet up to column Q (17 columns)
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${tabName}!A:Q`,
+    });
+
+    const rows = response.data.values;
+    if (!rows || rows.length <= 1) {
+      return NextResponse.json({ success: true, applications: [] });
+    }
+
+    // Header is row 0. Data is rows 1 to end
+    const headers = rows[0];
+    
+    // Fallback indexes in case the sheet headers are shifted
+    const getIndex = (name: string, fallbackIdx: number) => {
+      const idx = headers.indexOf(name);
+      return idx > -1 ? idx : fallbackIdx;
+    };
+
+    const idIdx = getIndex('ID', 0);
+    const companyIdx = getIndex('Company', 1);
+    const roleIdx = getIndex('Role', 2);
+    const locationIdx = getIndex('Location', 3);
+    const salaryIdx = getIndex('Salary', 4);
+    const currencyIdx = getIndex('Currency', 5);
+    const priorityIdx = getIndex('Priority', 6);
+    const workModeIdx = getIndex('Work Mode', 7);
+    const statusIdx = getIndex('Status', 8);
+    const appliedDateIdx = getIndex('Applied Date', 9);
+    const roundsIdx = getIndex('Rounds', 10);
+    const resumeIdx = getIndex('Resume File', 11);
+    const notesIdx = getIndex('Notes', 12);
+    const jdIdx = getIndex('JD', 13);
+    const timelineIdx = getIndex('Timeline', 14);
+    const sourceIdx = getIndex('Source', 15);
+    const updatedAtIdx = getIndex('UpdatedAt', 16);
+
+    const applications = rows.slice(1).map((row) => {
+      const parts = (row[roundsIdx] || '').split('/');
+      const currentRound = Number(parts[0]) || 1;
+      const totalRounds = Number(parts[1]) || undefined;
+
+      let timeline = [];
+      try {
+        timeline = JSON.parse(row[timelineIdx] || '[]');
+      } catch (e) {
+        timeline = [{ stage: row[statusIdx] || 'Applied', timestamp: new Date().toISOString() }];
+      }
+
+      return {
+        id: row[idIdx] || `app-${Date.now()}-${Math.random()}`,
+        company: row[companyIdx] || '',
+        role: row[roleIdx] || '',
+        location: row[locationIdx] || '',
+        salary: Number(row[salaryIdx]) || 0,
+        currency: row[currencyIdx] || 'USD',
+        priority: row[priorityIdx] || 'Low',
+        workMode: row[workModeIdx] || 'Remote',
+        status: row[statusIdx] || 'Wishlist',
+        appliedDate: row[appliedDateIdx] || '',
+        currentRound,
+        totalRounds,
+        resumeUsed: row[resumeIdx] || '',
+        notes: row[notesIdx] || '',
+        jd: row[jdIdx] || '',
+        timeline,
+        source: row[sourceIdx] || '',
+        updatedAt: row[updatedAtIdx] || new Date().toISOString()
+      };
+    });
+
+    return NextResponse.json({ success: true, applications });
+  } catch (error: any) {
+    console.error("Error reading Google Sheets API:", error);
+    return NextResponse.json({
+      error: 'api_failed',
+      message: error.message || 'Failed to read Google Sheets cells.',
+    }, { status: 500 });
+  }
+}
+
+// POST: Writes local applications to Google Sheets
 export async function POST(req: NextRequest) {
   const sessionCookie = req.cookies.get('nexrume-session');
 
@@ -101,7 +211,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const headers = ['Company', 'Role', 'Location', 'Salary', 'Currency', 'Priority', 'Work Mode', 'Status', 'Applied Date', 'Rounds', 'Resume File'];
+    const headers = [
+      'ID', 'Company', 'Role', 'Location', 'Salary', 'Currency', 
+      'Priority', 'Work Mode', 'Status', 'Applied Date', 'Rounds', 
+      'Resume File', 'Notes', 'JD', 'Timeline', 'Source', 'UpdatedAt'
+    ];
     
     const truncateCell = (val: string) => {
       if (!val) return '';
@@ -174,6 +288,7 @@ export async function POST(req: NextRequest) {
       const rowBg = idx % 2 === 0 ? ZINC_900 : ZINC_850;
 
       const appData = [
+        app.id || '',
         app.company || '',
         app.role || '',
         app.location || '',
@@ -184,7 +299,12 @@ export async function POST(req: NextRequest) {
         app.status || 'Wishlist',
         app.appliedDate || '',
         app.totalRounds ? `${app.currentRound || 1}/${app.totalRounds}` : '',
-        resumeValue
+        resumeValue,
+        app.notes || '',
+        app.jd || '',
+        JSON.stringify(app.timeline || []),
+        app.source || '',
+        app.updatedAt || new Date().toISOString()
       ];
 
       const rowValues = appData.map((val, colIdx) => {
@@ -202,16 +322,16 @@ export async function POST(req: NextRequest) {
           }
         };
 
-        // Align number values to the right or center (e.g. Salary, Currency, Applied Date, Rounds)
-        if (colIdx === 3) { // Salary
+        // Align number values to the right or center (e.g. Salary, Currency, Applied Date, Rounds, ID, UpdatedAt)
+        if (colIdx === 4) { // Salary
           cellData.userEnteredFormat.horizontalAlignment = 'RIGHT';
           cellData.userEnteredValue = { numberValue: Number(val) || 0 };
-        } else if (colIdx === 4 || colIdx === 8 || colIdx === 9) { // Currency, Date, Rounds
+        } else if (colIdx === 0 || colIdx === 5 || colIdx === 9 || colIdx === 10 || colIdx === 16) { // ID, Currency, Date, Rounds, UpdatedAt
           cellData.userEnteredFormat.horizontalAlignment = 'CENTER';
         }
 
-        // Apply specific color styling for Status (colIdx 7)
-        if (colIdx === 7) {
+        // Apply specific color styling for Status (colIdx 8)
+        if (colIdx === 8) {
           const status = val;
           const statusColor = STATUS_COLORS[status] || ZINC_200;
           cellData.userEnteredFormat.textFormat.foregroundColor = statusColor;
@@ -219,8 +339,8 @@ export async function POST(req: NextRequest) {
           cellData.userEnteredFormat.horizontalAlignment = 'CENTER';
         }
 
-        // Apply specific color styling for Priority (colIdx 5)
-        if (colIdx === 5) {
+        // Apply specific color styling for Priority (colIdx 6)
+        if (colIdx === 6) {
           const priority = val;
           const priorityColor = PRIORITY_COLORS[priority] || ZINC_200;
           cellData.userEnteredFormat.textFormat.foregroundColor = priorityColor;
@@ -242,15 +362,15 @@ export async function POST(req: NextRequest) {
 
     // Write styled grid and format using batchUpdate
     const requests = [
-      // 1. Reset cell background/text formats to the dark theme for rows 0 to 100
+      // 1. Reset cell background/text formats to the dark theme for rows 0 to maximum length
       {
         repeatCell: {
           range: {
             sheetId: sheetId,
             startRowIndex: 0,
-            endRowIndex: 100,
+            endRowIndex: Math.max(100, rowDataList.length + 10),
             startColumnIndex: 0,
-            endColumnIndex: 11
+            endColumnIndex: 17
           },
           cell: {
             userEnteredFormat: {
@@ -284,7 +404,7 @@ export async function POST(req: NextRequest) {
             sheetId: sheetId,
             dimension: 'COLUMNS',
             startIndex: 0,
-            endIndex: 11
+            endIndex: 17
           }
         }
       }

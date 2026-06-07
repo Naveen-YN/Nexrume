@@ -821,6 +821,8 @@ export default function Home() {
   const [newCertInput, setNewCertInput] = useState('');
   const [showSheetsAdvanced, setShowSheetsAdvanced] = useState(false);
   const [leetcodeUsernameInput, setLeetcodeUsernameInput] = useState('');
+  const [pairingToken, setPairingToken] = useState('');
+  const [inputPairingToken, setInputPairingToken] = useState('');
 
   // Initialize tempProfile when entering Settings or switching edit mode
   useEffect(() => {
@@ -7084,6 +7086,101 @@ export default function Home() {
                                 >
                                   Update Password
                                 </button>
+                              </div>
+                            </div>
+
+                            {/* Device Pairing Cross-Sync */}
+                            <div className="border-t border-zinc-800/60 pt-5 col-span-full space-y-4">
+                              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Device Pairing & Cross-Sync</h4>
+                              <p className="text-[10px] text-zinc-550 leading-relaxed">
+                                Since Google OAuth is restricted inside native wrapper apps (mobile APK & desktop EXE), you can log in on your system web browser, copy a secure Pairing Token, and paste it below to link your device.
+                              </p>
+                              
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* Generate Token (for logged in web users) */}
+                                <div className="bg-zinc-950/40 border border-zinc-850 p-4 rounded-xl space-y-3">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="font-bold text-zinc-300">Generate Pairing Token</span>
+                                    <span className="text-[10px] text-zinc-500">Copy this token to pair your mobile/desktop wrappers.</span>
+                                  </div>
+                                  
+                                  {pairingToken ? (
+                                    <div className="flex items-center gap-2">
+                                      <input 
+                                        type="text" 
+                                        readOnly
+                                        value={pairingToken}
+                                        className="bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-[10px] text-zinc-400 outline-none w-full font-mono select-all"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(pairingToken);
+                                          addNotification('Token Copied', 'Pairing token copied to clipboard.', 'success');
+                                        }}
+                                        className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 font-bold px-3 py-2 rounded-lg text-[10px] transition shrink-0"
+                                      >
+                                        Copy
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={async () => {
+                                        try {
+                                          const res = await fetch('/api/auth/pairing-token');
+                                          const data = await res.json();
+                                          if (data.success) {
+                                            setPairingToken(data.token);
+                                          } else {
+                                            alert(data.message || "Failed to generate token.");
+                                          }
+                                        } catch (e) {
+                                          alert("Failed to fetch pairing token. Make sure you are logged in.");
+                                        }
+                                      }}
+                                      className="bg-indigo-650 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-xl text-[10px] transition cursor-pointer"
+                                    >
+                                      Generate Token
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Paste Token (to authenticate device) */}
+                                <div className="bg-zinc-950/40 border border-zinc-850 p-4 rounded-xl space-y-3">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="font-bold text-zinc-300">Enter Pairing Token</span>
+                                    <span className="text-[10px] text-zinc-500">Paste the token generated from your browser session.</span>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2">
+                                    <input 
+                                      type="text" 
+                                      placeholder="Paste secure token here..."
+                                      value={inputPairingToken}
+                                      onChange={(e) => setInputPairingToken(e.target.value)}
+                                      className="bg-zinc-950 border border-zinc-800 focus:border-indigo-500 rounded-lg p-2 text-[10px] text-zinc-300 outline-none w-full font-mono"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={async () => {
+                                        const trimmed = inputPairingToken.trim();
+                                        if (!trimmed) return alert("Please paste a valid token.");
+                                        
+                                        // Save token to cookie
+                                        document.cookie = `nexrume-session=${trimmed}; path=/; max-age=604800; secure; samesite=lax`;
+                                        
+                                        // Trigger session verification
+                                        await checkSession();
+                                        setInputPairingToken('');
+                                        addNotification('Device Paired', 'Successfully authenticated session via pairing token.', 'success');
+                                      }}
+                                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-2 rounded-lg text-[10px] transition shrink-0"
+                                    >
+                                      Pair
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>

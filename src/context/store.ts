@@ -118,6 +118,53 @@ const calculateStreak = (applications: JobApplication[]): { current: number; bes
   return { current: currentStreak, best: maxStreak, week: weekCount, month: monthCount };
 };
 
+const emptyUserProfile: UserProfile = {
+  name: '',
+  email: '',
+  phone: '',
+  location: '',
+  profilePhoto: '',
+  experience: '',
+  skills: [],
+  education: '',
+  certifications: [],
+  github: '',
+  leetcode: '',
+  googleSheetsLink: '',
+  linkedin: '',
+  portfolio: '',
+  theme: 'dark',
+  notifications: {
+    inApp: true,
+    email: true,
+    push: false
+  },
+  timeZone: 'UTC',
+  defaultWorkMode: 'Remote',
+  defaultResumeVersion: '',
+  defaultEmailAccount: '',
+  defaultApplicationMethod: 'LinkedIn',
+  defaultLocationPreference: 'Remote',
+  githubContributions: 0,
+  githubStreak: 0,
+  githubGrid: null,
+  leetcodeRating: 0,
+  leetcodeContestsAttended: 0,
+  leetcodeSolved: 0,
+  leetcodeStreak: 0,
+  leetcodeConnected: false,
+  leetcodeLastSync: "",
+  leetcodeProfileUrl: "",
+  leetcodeSolvedThisWeek: 0,
+  leetcodeSolvedThisMonth: 0,
+  leetcodeLastSubmissionDate: "",
+  leetcodeRecentActivity: [],
+  jobSearchStreakCurrent: 0,
+  jobSearchStreakBest: 0,
+  applicationsThisWeek: 0,
+  applicationsThisMonth: 0
+};
+
 interface AgentActionLog {
   timestamp: string;
   type: 'info' | 'success' | 'warning';
@@ -262,18 +309,18 @@ export const useAppStore = create<AppState>()(
       googleSheetsLogs: [],
 
       // Initial App States
-      userProfile: initialUserProfile,
+      userProfile: emptyUserProfile,
       activeWorkspaceId: 'swe',
-      applications: initialJobApplications,
-      resumes: initialResumeVersions,
-      recruiters: initialRecruiterContacts,
-      emails: initialEmailMessages,
-      offers: initialOfferLetters,
-      automations: initialAutomationRules,
-      okrs: initialOKRs,
-      learnings: initialLearningTopics,
-      posts: initialCommunityPosts,
-      journal: initialJournalEntries,
+      applications: [],
+      resumes: [],
+      recruiters: [],
+      emails: [],
+      offers: [],
+      automations: [],
+      okrs: [],
+      learnings: [],
+      posts: [],
+      journal: [],
       agentLogs: [
         { timestamp: new Date().toLocaleTimeString(), type: 'success', message: 'Autonomous Career Agent initialized. Waiting for triggers...' }
       ],
@@ -290,83 +337,72 @@ export const useAppStore = create<AppState>()(
           if (data.isLoggedIn) {
             const currentEmail = data.user.email;
             const isMockUser = currentEmail === 'alex.dev@gmail.com';
-            const wasLoggedIn = get().isLoggedIn;
-
-            set({
-              isLoggedIn: true,
-              googleConnected: data.googleConnected,
-              isConnectedGmail: data.googleConnected || get().isConnectedGmail,
-              userProfile: {
-                ...get().userProfile,
-                name: data.user.name,
-                email: data.user.email,
-                profilePhoto: data.user.picture || get().userProfile.profilePhoto
-              }
-            });
-
-            // If it's a real user logging in, clean state only if changing accounts or logging in for the first time
+            
             const previousEmail = get().userProfile?.email?.toLowerCase();
             const currentEmailNormalized = currentEmail?.toLowerCase();
-            if (!isMockUser && (previousEmail !== currentEmailNormalized || previousEmail === 'alex.dev@gmail.com' || !previousEmail)) {
+
+            if (isMockUser) {
               set({
-                applications: [],
-                resumes: [],
-                recruiters: [],
-                emails: [],
-                offers: [],
-                okrs: [],
-                learnings: [],
-                journal: [],
-                notifications: [],
-                googleSheetsId: '',
-                googleSheetsConnected: false,
+                isLoggedIn: true,
+                googleConnected: data.googleConnected,
+                isConnectedGmail: data.googleConnected || get().isConnectedGmail,
+                applications: initialJobApplications,
+                resumes: initialResumeVersions,
+                recruiters: initialRecruiterContacts,
+                emails: initialEmailMessages,
+                offers: initialOfferLetters,
+                automations: initialAutomationRules,
+                okrs: initialOKRs,
+                learnings: initialLearningTopics,
+                posts: initialCommunityPosts,
+                journal: initialJournalEntries,
                 userProfile: {
+                  ...initialUserProfile,
                   name: data.user.name,
                   email: data.user.email,
-                  phone: '',
-                  location: '',
-                  profilePhoto: data.user.picture || '',
-                  experience: '',
-                  skills: [],
-                  education: '',
-                  certifications: [],
-                  github: '',
-                  leetcode: '',
-                  googleSheetsLink: '',
-                  linkedin: '',
-                  portfolio: '',
-                  theme: 'dark',
-                  notifications: {
-                    inApp: true,
-                    email: true,
-                    push: false
-                  },
-                  timeZone: 'UTC',
-                  defaultWorkMode: 'Remote',
-                  defaultResumeVersion: '',
-                  defaultEmailAccount: data.user.email,
-                  defaultApplicationMethod: 'LinkedIn',
-                  defaultLocationPreference: 'Remote',
-                  githubContributions: 0,
-                  githubStreak: 0,
-                  githubGrid: null,
-                  leetcodeRating: 0,
-                  leetcodeContestsAttended: 0,
-                  leetcodeSolved: 0,
-                  leetcodeStreak: 0,
-                  leetcodeConnected: false,
-                  leetcodeLastSync: "",
-                  leetcodeProfileUrl: "",
-                  leetcodeSolvedThisWeek: 0,
-                  leetcodeSolvedThisMonth: 0,
-                  leetcodeLastSubmissionDate: "",
-                  leetcodeRecentActivity: [],
-                  jobSearchStreakCurrent: 0,
-                  jobSearchStreakBest: 0,
-                  applicationsThisWeek: 0,
-                  applicationsThisMonth: 0
+                  profilePhoto: data.user.picture || initialUserProfile.profilePhoto
                 }
               });
+            } else {
+              // Clean state if changing accounts, or if previous account was mock, or if email was empty/unset
+              if (previousEmail !== currentEmailNormalized || previousEmail === 'alex.dev@gmail.com' || !previousEmail) {
+                set({
+                  isLoggedIn: true,
+                  googleConnected: data.googleConnected,
+                  isConnectedGmail: data.googleConnected || get().isConnectedGmail,
+                  applications: [],
+                  resumes: [],
+                  recruiters: [],
+                  emails: [],
+                  offers: [],
+                  automations: [],
+                  okrs: [],
+                  learnings: [],
+                  journal: [],
+                  notifications: [],
+                  googleSheetsId: '',
+                  googleSheetsConnected: false,
+                  userProfile: {
+                    ...emptyUserProfile,
+                    name: data.user.name,
+                    email: data.user.email,
+                    profilePhoto: data.user.picture || '',
+                    defaultEmailAccount: data.user.email
+                  }
+                });
+              } else {
+                set({
+                  isLoggedIn: true,
+                  googleConnected: data.googleConnected,
+                  isConnectedGmail: data.googleConnected || get().isConnectedGmail,
+                  userProfile: {
+                    ...get().userProfile,
+                    name: data.user.name,
+                    email: data.user.email,
+                    profilePhoto: data.user.picture || get().userProfile.profilePhoto
+                  }
+                });
+              }
             }
           } else {
             set({ isLoggedIn: false });
@@ -382,81 +418,67 @@ export const useAppStore = create<AppState>()(
         if (email.trim() && password.length >= 4) {
           const isMockUser = email.toLowerCase() === 'alex.dev@gmail.com';
           
-          set({ 
-            isLoggedIn: true,
-            userProfile: {
-              ...get().userProfile,
-              email: email,
-              name: isMockUser ? "Alex Dev" : email.split('@')[0],
-              github: isMockUser ? "github.com/alexdev-codes" : "",
-              leetcode: isMockUser ? "leetcode.com/alexdev-codes" : "",
-              googleSheetsLink: ""
-            }
-          });
-
-          // Isolate real user workspace if changing accounts or logging in for the first time
-          const previousEmail = get().userProfile?.email?.toLowerCase();
-          const currentEmailNormalized = email.toLowerCase();
-          if (!isMockUser && (previousEmail !== currentEmailNormalized || previousEmail === 'alex.dev@gmail.com' || !previousEmail)) {
-            set({
-              applications: [],
-              resumes: [],
-              recruiters: [],
-              emails: [],
-              offers: [],
-              okrs: [],
-              learnings: [],
-              journal: [],
-              notifications: [],
-              googleSheetsId: '',
-              googleSheetsConnected: false,
+          if (isMockUser) {
+            set({ 
+              isLoggedIn: true,
+              applications: initialJobApplications,
+              resumes: initialResumeVersions,
+              recruiters: initialRecruiterContacts,
+              emails: initialEmailMessages,
+              offers: initialOfferLetters,
+              automations: initialAutomationRules,
+              okrs: initialOKRs,
+              learnings: initialLearningTopics,
+              posts: initialCommunityPosts,
+              journal: initialJournalEntries,
               userProfile: {
-                name: email.split('@')[0],
+                ...initialUserProfile,
                 email: email,
-                phone: '',
-                location: '',
-                profilePhoto: '',
-                experience: '',
-                skills: [],
-                education: '',
-                certifications: [],
-                github: '',
-                leetcode: '',
-                googleSheetsLink: '',
-                linkedin: '',
-                portfolio: '',
-                theme: 'dark',
-                notifications: {
-                  inApp: true,
-                  email: true,
-                  push: false
-                },
-                timeZone: 'UTC',
-                defaultWorkMode: 'Remote',
-                defaultResumeVersion: '',
-                defaultEmailAccount: email,
-                defaultApplicationMethod: 'LinkedIn',
-                defaultLocationPreference: 'Remote',
-                githubContributions: 0,
-                githubStreak: 0,
-                githubGrid: null,
-                leetcodeRating: 0,
-                leetcodeContestsAttended: 0,
-                leetcodeSolved: 0,
-                leetcodeStreak: 0,
-                leetcodeConnected: false,
-                leetcodeLastSync: "",
-                leetcodeProfileUrl: "",
-                leetcodeSolvedThisWeek: 0,
-                leetcodeSolvedThisMonth: 0,
-                leetcodeLastSubmissionDate: "",
-                leetcodeRecentActivity: [],
-                jobSearchStreakCurrent: 0,
-                jobSearchStreakBest: 0,
-                applicationsThisWeek: 0,
-                applicationsThisMonth: 0
+                name: "Alex Dev",
+                github: "github.com/alexdev-codes",
+                leetcode: "leetcode.com/alexdev-codes",
+                googleSheetsLink: ""
               }
             });
+          } else {
+            const previousEmail = get().userProfile?.email?.toLowerCase();
+            const currentEmailNormalized = email.toLowerCase();
+
+            if (previousEmail !== currentEmailNormalized || previousEmail === 'alex.dev@gmail.com' || !previousEmail) {
+              set({
+                isLoggedIn: true,
+                applications: [],
+                resumes: [],
+                recruiters: [],
+                emails: [],
+                offers: [],
+                automations: [],
+                okrs: [],
+                learnings: [],
+                journal: [],
+                notifications: [],
+                googleSheetsId: '',
+                googleSheetsConnected: false,
+                userProfile: {
+                  ...emptyUserProfile,
+                  name: email.split('@')[0],
+                  email: email,
+                  defaultEmailAccount: email
+                }
+              });
+            } else {
+              set({ 
+                isLoggedIn: true,
+                userProfile: {
+                  ...get().userProfile,
+                  email: email,
+                  name: email.split('@')[0],
+                  github: "",
+                  leetcode: "",
+                  googleSheetsLink: ""
+                }
+              });
+            }
           }
 
           const logs = [...get().agentLogs];
@@ -480,26 +502,39 @@ export const useAppStore = create<AppState>()(
       signupUser: (name, email, workspace) => {
         const isMockUser = email.toLowerCase() === 'alex.dev@gmail.com';
         
-        set({ 
-          isLoggedIn: true,
-          userProfile: {
-            ...get().userProfile,
-            name,
-            email,
-            github: isMockUser ? "github.com/alexdev-codes" : "",
-            leetcode: isMockUser ? "leetcode.com/alexdev-codes" : "",
-            googleSheetsLink: ""
-          },
-          activeWorkspaceId: workspace
-        });
-
-        if (!isMockUser) {
+        if (isMockUser) {
+          set({ 
+            isLoggedIn: true,
+            applications: initialJobApplications,
+            resumes: initialResumeVersions,
+            recruiters: initialRecruiterContacts,
+            emails: initialEmailMessages,
+            offers: initialOfferLetters,
+            automations: initialAutomationRules,
+            okrs: initialOKRs,
+            learnings: initialLearningTopics,
+            posts: initialCommunityPosts,
+            journal: initialJournalEntries,
+            userProfile: {
+              ...initialUserProfile,
+              email: email,
+              name: name,
+              github: "github.com/alexdev-codes",
+              leetcode: "leetcode.com/alexdev-codes",
+              googleSheetsLink: ""
+            },
+            activeWorkspaceId: workspace
+          });
+        } else {
           set({
+            isLoggedIn: true,
+            activeWorkspaceId: workspace,
             applications: [],
             resumes: [],
             recruiters: [],
             emails: [],
             offers: [],
+            automations: [],
             okrs: [],
             learnings: [],
             journal: [],
@@ -507,50 +542,10 @@ export const useAppStore = create<AppState>()(
             googleSheetsId: '',
             googleSheetsConnected: false,
             userProfile: {
+              ...emptyUserProfile,
               name,
               email,
-              phone: '',
-              location: '',
-              profilePhoto: '',
-              experience: '',
-              skills: [],
-              education: '',
-              certifications: [],
-              github: '',
-              leetcode: '',
-              googleSheetsLink: '',
-              linkedin: '',
-              portfolio: '',
-              theme: 'dark',
-              notifications: {
-                inApp: true,
-                email: true,
-                push: false
-              },
-              timeZone: 'UTC',
-              defaultWorkMode: 'Remote',
-              defaultResumeVersion: '',
-              defaultEmailAccount: email,
-              defaultApplicationMethod: 'LinkedIn',
-              defaultLocationPreference: 'Remote',
-              githubContributions: 0,
-              githubStreak: 0,
-              githubGrid: null,
-              leetcodeRating: 0,
-              leetcodeContestsAttended: 0,
-              leetcodeSolved: 0,
-              leetcodeStreak: 0,
-              leetcodeConnected: false,
-              leetcodeLastSync: "",
-              leetcodeProfileUrl: "",
-              leetcodeSolvedThisWeek: 0,
-              leetcodeSolvedThisMonth: 0,
-              leetcodeLastSubmissionDate: "",
-              leetcodeRecentActivity: [],
-              jobSearchStreakCurrent: 0,
-              jobSearchStreakBest: 0,
-              applicationsThisWeek: 0,
-              applicationsThisMonth: 0
+              defaultEmailAccount: email
             }
           });
         }
@@ -1299,15 +1294,73 @@ export const useAppStore = create<AppState>()(
         }
 
         const time = new Date().toLocaleTimeString();
-        const logs = [...get().googleSheetsLogs, `[${time}] Pushing dynamic rows to Google Sheets API...`];
+        const logs = [...get().googleSheetsLogs, `[${time}] Initiating two-way sync with Google Sheets...`];
         set({ googleSheetsLogs: logs });
 
         try {
+          // 1. Fetch existing applications from the sheet for merging
+          let sheetApps: JobApplication[] = [];
+          const spreadsheetId = get().googleSheetsId;
+          const tabName = get().googleSheetsTab;
+
+          if (spreadsheetId) {
+            try {
+              const getRes = await fetch(`/api/sheets/sync?spreadsheetId=${encodeURIComponent(spreadsheetId)}&tabName=${encodeURIComponent(tabName)}`);
+              if (getRes.ok) {
+                const getData = await getRes.json();
+                sheetApps = getData.applications || [];
+              }
+            } catch (e: any) {
+              console.warn("Failed to fetch sheet applications for merging, proceeding with push-only:", e);
+            }
+          }
+
+          // 2. Perform two-way merge
+          const localApps = get().applications || [];
+          const mergedMap = new Map<string, JobApplication>();
+
+          const getMatchKey = (app: JobApplication) => 
+            `${app.company.toLowerCase().trim()}|${app.role.toLowerCase().trim()}|${app.appliedDate}`;
+
+          // Populate sheet applications first
+          sheetApps.forEach(app => {
+            if (app.id) {
+              mergedMap.set(app.id, app);
+            } else {
+              mergedMap.set(getMatchKey(app), app);
+            }
+          });
+
+          // Merge local applications (take whichever has the more recent updatedAt timestamp)
+          localApps.forEach(app => {
+            const keyById = app.id;
+            const keyByMatch = getMatchKey(app);
+
+            const existing = mergedMap.get(keyById) || mergedMap.get(keyByMatch);
+            if (existing) {
+              const existingTime = new Date(existing.updatedAt || 0).getTime();
+              const localTime = new Date(app.updatedAt || 0).getTime();
+              if (localTime > existingTime) {
+                mergedMap.set(keyById || existing.id, app);
+              }
+            } else {
+              mergedMap.set(keyById, app);
+            }
+          });
+
+          const mergedApps = Array.from(mergedMap.values()).sort((a, b) => 
+            new Date(b.appliedDate || 0).getTime() - new Date(a.appliedDate || 0).getTime()
+          );
+
+          // Save merged list locally in Zustand
+          set({ applications: mergedApps });
+
+          // 3. Push the merged list back to the Google Sheet
           const res = await fetch('/api/sheets/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              applications: get().applications,
+              applications: mergedApps,
               spreadsheetId: get().googleSheetsId,
               tabName: get().googleSheetsTab
             })
@@ -1334,7 +1387,7 @@ export const useAppStore = create<AppState>()(
 
           get().addNotification(
             'Google Sheets Synced',
-            `Successfully synchronized ${get().applications.length} jobs to spreadsheet: "${data.spreadsheetId.substring(0, 8)}..."`,
+            `Successfully synchronized ${mergedApps.length} jobs to spreadsheet: "${data.spreadsheetId.substring(0, 8)}..."`,
             'success'
           );
         } catch (error: any) {
