@@ -151,7 +151,7 @@ export interface ResumeVersion {
   applyColorDates?: boolean;
   applyColorSubtitle?: boolean;
   applyColorLinkIcons?: boolean;
-  headingStyle?: 'simple' | 'underline' | 'left-block' | 'background-fill' | 'wavy' | 'double-line';
+  headingStyle?: 'simple' | 'underline' | 'left-block' | 'background-fill' | 'wavy' | 'double-line' | 'none';
   headingCapitalization?: 'capitalize' | 'uppercase';
   headingSize?: 'S' | 'M' | 'L' | 'XL';
   headingIcons?: 'none' | 'outline' | 'filled';
@@ -194,15 +194,15 @@ export interface ResumeVersion {
   footerCustomText?: string;
   // Expanded sections & controls
   showPhoto?: boolean;
-  photoStyle?: 'circle' | 'square';
+  photoStyle?: 'circle' | 'square' | 'rounded';
   photoSize?: number;
-  certificationsList?: { id: string; name: string; issuer: string; date: string; credentialId: string }[];
-  achievementsList?: { id: string; title: string; description: string }[];
-  publicationsList?: { id: string; title: string; publisher: string; year: string }[];
-  languagesList?: { id: string; language: string; proficiency: string }[];
-  interestsList?: { id: string; name: string }[];
-  referencesList?: { id: string; name: string; position: string; company: string; contact: string }[];
-  customSections?: { id: string; title: string; content: string }[];
+  certificationsList?: { id: string; name: string; issuer: string; date: string; credentialId: string; hidden?: boolean }[];
+  achievementsList?: { id: string; title: string; description: string; hidden?: boolean }[];
+  publicationsList?: { id: string; title: string; publisher: string; year: string; hidden?: boolean }[];
+  languagesList?: { id: string; language: string; proficiency: string; hidden?: boolean }[];
+  interestsList?: { id: string; name: string; hidden?: boolean }[];
+  referencesList?: { id: string; name: string; position: string; company: string; contact: string; hidden?: boolean }[];
+  customSections?: { id: string; title: string; content: string; hidden?: boolean }[];
   signatureImage?: string;
   nameAlign?: 'left' | 'center' | 'right';
   letterSpacing?: string;
@@ -218,7 +218,18 @@ export interface ResumeVersion {
   zoom?: number;
   watermarkEnabled?: boolean;
   watermarkText?: string;
+  
+  // FlowCV lists
+  awardsList?: { id: string; title: string; issuer: string; date: string; description: string; hidden?: boolean }[];
+  organizationsList?: { id: string; name: string; role: string; date: string; description: string; hidden?: boolean }[];
+  coursesList?: { id: string; name: string; provider: string; date: string; hidden?: boolean }[];
+  volunteeringList?: { id: string; role: string; organization: string; date: string; description: string; hidden?: boolean }[];
+  patentsList?: { id: string; title: string; number: string; date: string; description: string; hidden?: boolean }[];
+  hobbiesList?: { id: string; name: string; hidden?: boolean }[];
+  declarationText?: string;
+  socialFields?: { id: string; field: string; label: string; value: string; hidden?: boolean }[];
 }
+
 
 export interface RecruiterContact {
   id: string;

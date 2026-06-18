@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ResumeVersion } from '../../db/mockData';
-import { Sparkles, ArrowRight, CheckCircle2, Clipboard } from 'lucide-react';
+import { Sparkles, ArrowRight, CheckCircle2, Clipboard, RefreshCw, Layers } from 'lucide-react';
 
 interface EditorAiProps {
   activeResume: ResumeVersion;
@@ -14,46 +14,74 @@ export const EditorAi: React.FC<EditorAiProps> = ({
   const [inputText, setInputText] = useState('');
   const [outputText, setOutputText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedTone, setSelectedTone] = useState<'formal' | 'shorter' | 'stronger' | 'ats'>('ats');
 
+  // Generator Options
   const handleGenerateSummary = () => {
     setIsGenerating(true);
     setTimeout(() => {
-      const skillsArr = activeResume.skills ? activeResume.skills.split(',').slice(0, 4).map(s => s.trim()) : ['React', 'Next.js', 'TypeScript'];
-      const summary = `Results-oriented Software Engineer with experience building scalable systems using ${skillsArr.join(', ')}. Proven track record of optimizing API performance, designing distributed services, and collaborating in agile developer teams to deploy high-throughput applications.`;
+      const skillsArr = activeResume.skills ? activeResume.skills.split(',').slice(0, 4).map(s => s.trim()) : ['React', 'Next.js', 'TypeScript', 'AWS'];
+      const summary = `Results-oriented Software Engineer with experience designing and optimizing high-throughput system architectures using ${skillsArr.join(', ')}. Proven track record of scaling RESTful APIs, implementing distributed microservices, and collaborating in agile teams to improve core product performance.`;
       setOutputText(summary);
       setIsGenerating(false);
     }, 700);
   };
 
-  const handleEnhanceBullet = () => {
-    if (!inputText.trim()) {
-      alert("Please paste a work experience description to enhance first.");
-      return;
-    }
+  const handleGenerateExperience = () => {
     setIsGenerating(true);
     setTimeout(() => {
-      const bullets = [
-        `Architected and optimized the primary database query engine, reducing latencies by 34% and increasing concurrent connection capacity.`,
-        `Led a team of engineers to implement Next.js state routing protocols, improving Core Web Vitals and user engagement metrics by 25%.`,
-        `Designed and scaled distributed microservices using AWS container systems, boosting overall deployment reliability to 99.9%.`
-      ];
-      // pick a random one
-      const idx = Math.floor(Math.random() * bullets.length);
-      setOutputText(bullets[idx]);
+      const bullets = `• Developed and scaled core REST APIs, improving request latency by 28% and handling up to 10K concurrent operations.
+• Re-architected data ingestion pipelines using Redis and RabbitMQ to optimize messaging throughput.
+• Spearheaded full-stack Next.js deployment protocols, improving Lighthouse score by 15 points.`;
+      setOutputText(bullets);
       setIsGenerating(false);
     }, 800);
   };
 
-  const handleSuggestKeywords = () => {
+  const handleGenerateProject = () => {
     setIsGenerating(true);
     setTimeout(() => {
-      const keywords = `Recommended SDE Tokens: "concurrency paradigms", "caching layers (Redis)", "distributed systems engineering", "load balancing protocols", "relational schemas", "CI/CD container pipelines (Docker)".`;
-      setOutputText(keywords);
+      const project = `Built a distributed telemetry pipeline using Next.js, Node.js, and Docker to track real-time application metrics. Optimized database lookups with indexing, reducing average dashboard loading latencies by 35% and improving uptime.`;
+      setOutputText(project);
+      setIsGenerating(false);
+    }, 750);
+  };
+
+  const handleGenerateSkills = () => {
+    setIsGenerating(true);
+    setTimeout(() => {
+      const skills = `React, Next.js, TypeScript, Node.js, Express, Python, Django, PostgreSQL, MongoDB, Redis, Docker, AWS (S3, EC2, Lambda), CI/CD, Git`;
+      setOutputText(skills);
       setIsGenerating(false);
     }, 600);
   };
 
-  const applyToResume = (field: 'summary' | 'skills') => {
+  // Tone Rewrite
+  const handleRewrite = () => {
+    if (!inputText.trim()) {
+      alert("Please paste some text in the scratchpad box first to rewrite.");
+      return;
+    }
+    setIsGenerating(true);
+
+    setTimeout(() => {
+      let result = '';
+      if (selectedTone === 'formal') {
+        result = `I am writing to substantiate my technical capabilities in designing, optimizing, and deploying high-performance distributed software architectures. My core competencies encompass developing modular systems, improving backend query efficiencies, and maintaining modern code standards.`;
+      } else if (selectedTone === 'shorter') {
+        result = `Software Engineer experienced in scaling REST APIs, building Next.js applications, and optimizing databases. Improved throughput by 30%.`;
+      } else if (selectedTone === 'stronger') {
+        result = `Spearheaded architecture of backend services, boosting overall query speeds by 42%. Engineered caching layers to support 5M daily queries. Led cross-functional developer sprints.`;
+      } else {
+        // ATS Optimized
+        result = `Designed and deployed scalable Next.js applications with optimized database schemas. Utilized CI/CD pipelines, Docker containerization, and AWS hosting protocols to improve overall deployment reliability.`;
+      }
+      setOutputText(result);
+      setIsGenerating(false);
+    }, 850);
+  };
+
+  const applyToResume = (field: 'summary' | 'skills' | 'experience' | 'projects') => {
     if (!outputText) return;
     onUpdateResume({ [field]: outputText });
     alert(`Successfully applied output to your resume ${field}!`);
@@ -61,56 +89,103 @@ export const EditorAi: React.FC<EditorAiProps> = ({
 
   return (
     <div className="space-y-4 text-xs">
-      <div className="bg-zinc-955 border border-zinc-850 p-4 rounded-xl space-y-3">
-        <span className="text-[10px] font-bold text-zinc-400 block uppercase tracking-wider flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
-          <span>AI SDE Copilot Assistant</span>
+      {/* Scratchpad Card */}
+      <div className="bg-zinc-955 border border-zinc-850 p-4 rounded-xl space-y-4">
+        <span className="text-[10px] font-black text-zinc-400 block uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
+          <Sparkles className="w-4 h-4 text-indigo-400" />
+          <span>AI Content Copilot & Rewrite Scratchpad</span>
         </span>
 
-        <p className="text-[9.5px] text-zinc-500 leading-normal">
-          Provide context or a rough draft below, then choose an agent completion to generate high-impact, metrics-driven bullet points.
+        <p className="text-[9.5px] text-zinc-550 leading-normal">
+          Draft a section, paste legacy bullet points, or generate new resume content instantly using our SDE-focused AI Copilot.
         </p>
 
         <textarea
-          placeholder="Paste a rough experience sentence (e.g. 'I wrote code for backend APIs') or summary draft here..."
+          placeholder="Paste text here to rewrite, or type custom context guidelines..."
           value={inputText}
           onChange={e => setInputText(e.target.value)}
-          rows={3}
-          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-250 outline-none focus:border-indigo-500 transition text-[11px] leading-relaxed"
+          rows={4}
+          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px] leading-relaxed font-mono"
         />
 
-        <div className="flex flex-wrap gap-2 pt-1">
+        {/* Action Buttons Row */}
+        <div className="flex flex-wrap gap-2 pt-1 border-t border-zinc-900">
           <button
             onClick={handleGenerateSummary}
             disabled={isGenerating}
-            className="bg-zinc-900 border border-zinc-800 hover:border-zinc-750 text-[10px] font-bold text-zinc-300 px-3 py-1.5 rounded-lg transition disabled:opacity-40 cursor-pointer"
+            className="bg-zinc-900 border border-zinc-800 hover:border-zinc-750 text-[10px] font-black uppercase text-zinc-350 px-3 py-2 rounded-lg transition disabled:opacity-40 cursor-pointer"
           >
-            Draft Profile Summary
+            Draft Summary
           </button>
           
           <button
-            onClick={handleEnhanceBullet}
+            onClick={handleGenerateExperience}
             disabled={isGenerating}
-            className="bg-zinc-900 border border-zinc-800 hover:border-zinc-750 text-[10px] font-bold text-zinc-300 px-3 py-1.5 rounded-lg transition disabled:opacity-40 cursor-pointer"
+            className="bg-zinc-900 border border-zinc-800 hover:border-zinc-750 text-[10px] font-black uppercase text-zinc-350 px-3 py-2 rounded-lg transition disabled:opacity-40 cursor-pointer"
           >
-            Enhance Experience Bullet
+            Draft Work Bullets
           </button>
 
           <button
-            onClick={handleSuggestKeywords}
+            onClick={handleGenerateProject}
             disabled={isGenerating}
-            className="bg-zinc-900 border border-zinc-800 hover:border-zinc-750 text-[10px] font-bold text-zinc-300 px-3 py-1.5 rounded-lg transition disabled:opacity-40 cursor-pointer"
+            className="bg-zinc-900 border border-zinc-800 hover:border-zinc-750 text-[10px] font-black uppercase text-zinc-350 px-3 py-2 rounded-lg transition disabled:opacity-40 cursor-pointer"
           >
-            Suggest ATS Keywords
+            Draft Project Desc
+          </button>
+
+          <button
+            onClick={handleGenerateSkills}
+            disabled={isGenerating}
+            className="bg-zinc-900 border border-zinc-800 hover:border-zinc-750 text-[10px] font-black uppercase text-zinc-350 px-3 py-2 rounded-lg transition disabled:opacity-40 cursor-pointer"
+          >
+            Suggest Skills
           </button>
         </div>
       </div>
 
+      {/* Rewrite Tone Selector Card */}
+      <div className="bg-zinc-955 border border-zinc-850 p-4 rounded-xl space-y-3.5">
+        <span className="text-[10px] font-black text-zinc-400 block uppercase tracking-wider flex items-center gap-1.5">
+          <Layers className="w-3.5 h-3.5 text-indigo-400" />
+          <span>AI Tone Rewrite</span>
+        </span>
+
+        <div className="flex bg-zinc-950 p-0.5 rounded border border-zinc-800 text-[10px] font-black uppercase tracking-wider w-fit">
+          {[
+            { id: 'ats', label: 'ATS Optimized' },
+            { id: 'stronger', label: 'Stronger / Metrics' },
+            { id: 'formal', label: 'Formal Tone' },
+            { id: 'shorter', label: 'Shorter / Concise' }
+          ].map(tone => (
+            <button
+              key={tone.id}
+              onClick={() => setSelectedTone(tone.id as any)}
+              className={`px-3 py-1.5 rounded cursor-pointer transition ${
+                selectedTone === tone.id ? 'bg-indigo-650 text-white font-bold' : 'text-zinc-550 hover:text-zinc-350'
+              }`}
+            >
+              {tone.label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={handleRewrite}
+          disabled={isGenerating}
+          className="bg-indigo-600 hover:bg-indigo-500 text-xs font-black uppercase tracking-wider text-white px-4 py-2.5 rounded-lg flex items-center gap-1.5 transition cursor-pointer"
+        >
+          {isGenerating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          <span>Apply Tone Rewrite</span>
+        </button>
+      </div>
+
+      {/* Suggestions Output Panel */}
       {outputText && (
-        <div className="bg-zinc-955 border border-indigo-950/40 p-4 rounded-xl space-y-3 animate-fade-in">
-          <span className="text-[10px] font-bold text-indigo-400 block uppercase tracking-wider">AI Suggestion Result</span>
+        <div className="bg-zinc-955 border border-indigo-950/45 p-4 rounded-xl space-y-3.5 animate-fade-in">
+          <span className="text-[10px] font-black text-indigo-400 block uppercase tracking-wider">AI Copilot Generated Text</span>
           
-          <div className="bg-zinc-950 border border-zinc-900 rounded-lg p-3 text-zinc-300 font-mono text-[10.5px] leading-relaxed whitespace-pre-line">
+          <div className="bg-zinc-950 border border-zinc-900 rounded-xl p-3.5 text-zinc-300 font-mono text-[11px] leading-relaxed whitespace-pre-line select-text">
             {outputText}
           </div>
 
@@ -118,20 +193,26 @@ export const EditorAi: React.FC<EditorAiProps> = ({
             <button
               onClick={() => {
                 navigator.clipboard.writeText(outputText);
-                alert("Copied suggestion output!");
+                alert("Copied suggestion to clipboard!");
               }}
-              className="bg-zinc-900 border border-zinc-800 hover:border-zinc-750 text-[10px] text-zinc-400 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition cursor-pointer"
+              className="bg-zinc-900 border border-zinc-800 hover:border-zinc-750 text-[10px] text-zinc-400 px-3 py-2 rounded-lg flex items-center gap-1.5 transition cursor-pointer font-semibold"
             >
-              <Clipboard className="w-3 h-3" />
-              <span>Copy Suggestion</span>
+              <Clipboard className="w-3.5 h-3.5" />
+              <span>Copy</span>
             </button>
             
             <button
               onClick={() => applyToResume('summary')}
-              className="bg-indigo-950/40 border border-indigo-900/30 hover:bg-indigo-900/20 text-indigo-400 text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition cursor-pointer"
+              className="bg-zinc-900 border border-zinc-800 hover:border-zinc-750 text-[10px] text-zinc-400 px-3 py-2 rounded-lg flex items-center gap-1.5 transition cursor-pointer font-semibold"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Apply to Summary</span>
+            </button>
+
+            <button
+              onClick={() => applyToResume('skills')}
+              className="bg-zinc-900 border border-zinc-800 hover:border-zinc-750 text-[10px] text-zinc-400 px-3 py-2 rounded-lg flex items-center gap-1.5 transition cursor-pointer font-semibold"
+            >
+              <span>Apply to Skills</span>
             </button>
           </div>
         </div>

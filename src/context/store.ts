@@ -907,8 +907,19 @@ export const useAppStore = create<AppState>()(
           headerStyle: 'left',
           zoom: 1,
           watermarkEnabled: false,
-          watermarkText: 'CONFIDENTIAL'
+          watermarkText: 'CONFIDENTIAL',
+          
+          // FlowCV lists
+          awardsList: [],
+          organizationsList: [],
+          coursesList: [],
+          volunteeringList: [],
+          patentsList: [],
+          hobbiesList: [],
+          declarationText: '',
+          socialFields: []
         };
+
         return { resumes: [...state.resumes, newResume] };
       }),
 
