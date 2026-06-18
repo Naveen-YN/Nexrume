@@ -373,6 +373,7 @@ const SmartEmailInput: React.FC<SmartEmailInputProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const { userProfile } = useAppStore();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -386,9 +387,21 @@ const SmartEmailInput: React.FC<SmartEmailInputProps> = ({
 
   const emailSuggestions = React.useMemo(() => {
     const emailStats: Record<string, { count: number; lastUsed: number }> = {};
+    
+    // Automatically include user's own email if available
+    if (userProfile?.email) {
+      emailStats[userProfile.email] = { count: 1, lastUsed: Date.now() };
+    }
+
     applications.forEach(app => {
       const email = app.appliedFromEmail;
       if (!email) return;
+      
+      // Filter out mock email if logged-in user is not the mock user
+      if (userProfile?.email && userProfile.email !== 'alex.dev@gmail.com' && email === 'alex.dev@gmail.com') {
+        return;
+      }
+
       const appTime = app.appliedDate ? new Date(app.appliedDate).getTime() : 0;
       if (!emailStats[email]) {
         emailStats[email] = { count: 0, lastUsed: 0 };
@@ -405,7 +418,7 @@ const SmartEmailInput: React.FC<SmartEmailInputProps> = ({
       if (statA.count !== statB.count) return statB.count - statA.count;
       return statB.lastUsed - statA.lastUsed;
     });
-  }, [applications]);
+  }, [applications, userProfile]);
 
   const query = (value || "").trim().toLowerCase();
   const filtered = query
@@ -961,16 +974,52 @@ export default function Home() {
     }
   }, [userProfile, updateProfile]);
 
+  const [lastEmailInitialized, setLastEmailInitialized] = useState<string | null>(null);
+
   // Load defaults from userProfile when page mounts or profile changes (for empty fields)
   useEffect(() => {
     if (userProfile) {
-      setFormLoc(prev => prev || userProfile.defaultLocationPreference || '');
-      setFormWorkMode(prev => prev === 'Remote' && userProfile.defaultWorkMode ? userProfile.defaultWorkMode : prev);
-      setFormEmailUsed(prev => prev || userProfile.defaultEmailAccount || '');
-      setFormAppMethod(prev => prev === 'Company Careers Page' && userProfile.defaultApplicationMethod ? userProfile.defaultApplicationMethod : prev);
-      setFormResumeVersion(prev => prev || userProfile.defaultResumeVersion || '');
+      const currentEmail = userProfile.email || '';
+      const emailChanged = lastEmailInitialized !== currentEmail;
+
+      const defaultEmail = (userProfile.email && userProfile.email !== 'alex.dev@gmail.com' && userProfile.defaultEmailAccount === 'alex.dev@gmail.com')
+        ? userProfile.email
+        : (userProfile.defaultEmailAccount || '');
+
+      if (emailChanged) {
+        setFormCompany('');
+        setFormRole('');
+        setFormUrl('');
+        setFormLoc(userProfile.defaultLocationPreference || '');
+        setFormWorkMode(userProfile.defaultWorkMode || 'Remote');
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        setFormAppDate(new Date(now.getTime() - offset).toISOString().slice(0, 16));
+        setFormEmailUsed(defaultEmail);
+        setFormAppMethod(userProfile.defaultApplicationMethod || 'Company Careers Page');
+        setFormCustomMethod('');
+        setFormAppType('Full Time');
+        setFormReferralUsed(false);
+        setFormReferrerName('');
+        setFormReferrerLinkedin('');
+        setFormReferralNotes('');
+        setFormStatus('Applied');
+        setFormShortlisted(false);
+        setFormResumeVersion(userProfile.defaultResumeVersion || '');
+        setFormResumeFile('');
+        setFormResumeMetadata(null);
+        setFormResumeTags([]);
+        setFormRounds([]);
+        setLastEmailInitialized(currentEmail);
+      } else {
+        setFormLoc(prev => prev || userProfile.defaultLocationPreference || '');
+        setFormWorkMode(prev => prev === 'Remote' && userProfile.defaultWorkMode ? userProfile.defaultWorkMode : prev);
+        setFormEmailUsed(prev => prev || defaultEmail);
+        setFormAppMethod(prev => prev === 'Company Careers Page' && userProfile.defaultApplicationMethod ? userProfile.defaultApplicationMethod : prev);
+        setFormResumeVersion(prev => prev || userProfile.defaultResumeVersion || '');
+      }
     }
-  }, [userProfile]);
+  }, [userProfile, lastEmailInitialized]);
 
   // Sub-tabs and drag reordering states for redesigned ATS-style form
   const [formSubTab, setFormSubTab] = useState<'details' | 'notes' | 'attachments'>('details');
@@ -3354,14 +3403,14 @@ export default function Home() {
                   </div>
 
                   {/* Form Body (Scrollable compactly inside desktop pane, no browser scrollbars) */}
-                  <div className="px-4 py-3.5 space-y-3 lg:flex-1 lg:overflow-y-auto lg:scrollbar-thin text-xs select-none pr-2">
+                  <div className="px-4 py-3.5 lg:flex-1 lg:flex lg:flex-col lg:min-h-0 lg:overflow-hidden text-xs select-none pr-2">
                     {(() => {
                       const isInterviewVisible = formShortlisted || ['Shortlisted', 'Assessment', 'Interview', 'Offer'].includes(formStatus);
 
                       return (
-                        <div className={`grid grid-cols-1 ${isInterviewVisible ? 'xl:grid-cols-2 gap-5' : ''}`}>
+                        <div className={`grid grid-cols-1 ${isInterviewVisible ? 'xl:grid-cols-2 gap-5 xl:h-full xl:min-h-0 xl:overflow-hidden' : 'lg:flex-1 lg:overflow-y-auto lg:scrollbar-thin lg:pr-2'}`}>
                           {/* Column 1: Core Form Fields & Tabs */}
-                          <div className="space-y-3.5">
+                          <div className={`space-y-3.5 ${isInterviewVisible ? 'xl:h-full xl:overflow-y-auto xl:scrollbar-thin xl:pr-2 xl:pb-1' : ''}`}>
                             {/* Core Details (Always Visible) */}
                             <div className="grid grid-cols-2 gap-3.5 bg-zinc-950/20 border border-zinc-850 p-3 rounded-xl">
                               <div>
@@ -3598,7 +3647,7 @@ export default function Home() {
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3.5 pt-1.5 border-t border-zinc-900/60">
+                                <div className={`grid ${isInterviewVisible ? 'grid-cols-1 gap-2.5' : 'grid-cols-2 gap-3.5'} pt-1.5 border-t border-zinc-900/60`}>
                                   <div>
                                     <label className="text-zinc-400 font-bold block mb-1 text-[10px]">
                                       Upload Resume (PDF/DOCX)
@@ -3828,7 +3877,7 @@ export default function Home() {
 
                           {/* Column 2: Interview Pipeline (Conditional) */}
                           {isInterviewVisible && (
-                            <div className="border-t xl:border-t-0 xl:border-l border-zinc-800/80 pt-4 xl:pt-0 xl:pl-5 space-y-3.5">
+                            <div className="border-t xl:border-t-0 xl:border-l border-zinc-800/80 pt-4 xl:pt-0 xl:pl-5 space-y-3.5 flex flex-col xl:h-full xl:overflow-hidden min-h-0">
                               {/* Interview Header */}
                               <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
                                 <span className="text-xs font-bold text-white uppercase tracking-wider">Interview Process</span>
@@ -3885,7 +3934,7 @@ export default function Home() {
                                   No interview rounds configured yet. Select a template or click "+ Add Round" to build your process.
                                 </div>
                               ) : (
-                                <div className="space-y-2.5 max-h-[340px] overflow-y-auto pr-1 pb-1 scrollbar-thin">
+                                <div className="space-y-2.5 max-h-[340px] xl:max-h-none xl:flex-1 xl:overflow-y-auto xl:min-h-0 pr-1 pb-1 scrollbar-thin">
                                   {formRounds.map((round, idx) => {
                                     const isCollapsed = !roundOpenState[round.id];
                                     
@@ -4107,7 +4156,10 @@ export default function Home() {
                         const now = new Date();
                         const offset = now.getTimezoneOffset() * 60000;
                         setFormAppDate(new Date(now.getTime() - offset).toISOString().slice(0, 16));
-                        setFormEmailUsed(userProfile.defaultEmailAccount || '');
+                        const defaultEmail = (userProfile.email && userProfile.email !== 'alex.dev@gmail.com' && userProfile.defaultEmailAccount === 'alex.dev@gmail.com')
+                          ? userProfile.email
+                          : (userProfile.defaultEmailAccount || '');
+                        setFormEmailUsed(defaultEmail);
                         setFormAppMethod(userProfile.defaultApplicationMethod || 'Company Careers Page');
                         setFormCustomMethod('');
                         setFormAppType('Full Time');
@@ -7275,10 +7327,10 @@ export default function Home() {
               </div>
 
               {/* Scrollable Form Body */}
-              <div className="flex-1 overflow-y-auto pr-2 space-y-3 text-xs scrollbar-thin select-none">
-                <div className={`grid grid-cols-1 ${isEditInterviewVisible ? 'xl:grid-cols-2 gap-5' : ''}`}>
+              <div className="flex-1 lg:flex lg:flex-col lg:min-h-0 lg:overflow-hidden pr-2 text-xs select-none">
+                <div className={`grid grid-cols-1 ${isEditInterviewVisible ? 'xl:grid-cols-2 gap-5 xl:h-full xl:min-h-0 xl:overflow-hidden' : 'lg:flex-1 lg:overflow-y-auto lg:scrollbar-thin lg:pr-2'}`}>
                   {/* Column 1: Core Form Fields & Tabs */}
-                  <div className="space-y-3.5">
+                  <div className={`space-y-3.5 ${isEditInterviewVisible ? 'xl:h-full xl:overflow-y-auto xl:scrollbar-thin xl:pr-2 xl:pb-1' : ''}`}>
                     {/* Core Details (Always Visible) */}
                     <div className="grid grid-cols-2 gap-3.5 bg-zinc-950/20 border border-zinc-855 p-3 rounded-xl">
                       <div>
@@ -7514,7 +7566,7 @@ export default function Home() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3.5 pt-1.5 border-t border-zinc-900/60">
+                        <div className={`grid ${isEditInterviewVisible ? 'grid-cols-1 gap-2.5' : 'grid-cols-2 gap-3.5'} pt-1.5 border-t border-zinc-900/60`}>
                           <div>
                             <label className="text-zinc-400 font-bold block mb-1 text-[10px]">
                               Upload Resume (PDF/DOCX)
@@ -7783,7 +7835,7 @@ export default function Home() {
 
                   {/* Column 2: Interview Pipeline (Conditional) */}
                   {isEditInterviewVisible && (
-                    <div className="border-t xl:border-t-0 xl:border-l border-zinc-800/80 pt-4 xl:pt-0 xl:pl-5 space-y-3.5">
+                    <div className="border-t xl:border-t-0 xl:border-l border-zinc-800/80 pt-4 xl:pt-0 xl:pl-5 space-y-3.5 flex flex-col xl:h-full xl:overflow-hidden min-h-0">
                       {/* Interview Header */}
                       <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
                         <span className="text-xs font-bold text-white uppercase tracking-wider">Interview Process</span>
@@ -7878,7 +7930,7 @@ export default function Home() {
                           No interview rounds configured yet. Select a template or click "+ Add Round" to build your process.
                         </div>
                       ) : (
-                        <div className="space-y-2.5 max-h-[340px] overflow-y-auto pr-1 pb-1 scrollbar-thin">
+                        <div className="space-y-2.5 max-h-[340px] xl:max-h-none xl:flex-1 xl:overflow-y-auto xl:min-h-0 pr-1 pb-1 scrollbar-thin">
                           {editRounds.map((round, idx) => {
                             const isCollapsed = !roundOpenState[round.id];
                             

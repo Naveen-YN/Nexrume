@@ -391,16 +391,22 @@ export const useAppStore = create<AppState>()(
                   }
                 });
               } else {
+                const updatedProfile = {
+                  ...get().userProfile,
+                  name: data.user.name,
+                  email: data.user.email,
+                  profilePhoto: data.user.picture || get().userProfile.profilePhoto
+                };
+                if (data.user.email && data.user.email !== 'alex.dev@gmail.com') {
+                  if (!updatedProfile.defaultEmailAccount || updatedProfile.defaultEmailAccount === 'alex.dev@gmail.com') {
+                    updatedProfile.defaultEmailAccount = data.user.email;
+                  }
+                }
                 set({
                   isLoggedIn: true,
                   googleConnected: data.googleConnected,
                   isConnectedGmail: data.googleConnected || get().isConnectedGmail,
-                  userProfile: {
-                    ...get().userProfile,
-                    name: data.user.name,
-                    email: data.user.email,
-                    profilePhoto: data.user.picture || get().userProfile.profilePhoto
-                  }
+                  userProfile: updatedProfile
                 });
               }
             }
