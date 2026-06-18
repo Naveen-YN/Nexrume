@@ -832,20 +832,21 @@ export const useAppStore = create<AppState>()(
 
       addResumeVersion: (name, template) => set((state) => {
         const id = `res-${Date.now()}`;
+        const isMock = state.userProfile.email === 'alex.dev@gmail.com';
         const newResume: ResumeVersion = {
           id,
           version: `V${state.resumes.length + 1}`,
           name,
           template,
-          summary: "Detailing skills and credentials.",
-          education: state.userProfile.education,
-          experience: "Experience entries...",
-          projects: "Projects list...",
-          skills: state.userProfile.skills.join(', '),
-          certifications: state.userProfile.certifications.join(', '),
-          achievements: "Achievements...",
+          summary: isMock ? "Detailing skills and credentials." : "",
+          education: isMock ? state.userProfile.education : "",
+          experience: isMock ? "Experience entries..." : "",
+          projects: isMock ? "Projects list..." : "",
+          skills: isMock ? state.userProfile.skills.join(', ') : "",
+          certifications: isMock ? state.userProfile.certifications.join(', ') : "",
+          achievements: isMock ? "Achievements..." : "",
           isPublic: false,
-          atsScore: 75,
+          atsScore: isMock ? 75 : 0,
           accentColor: 'indigo',
           fontSize: 'base',
           fontFamily: 'sans',
@@ -874,7 +875,7 @@ export const useAppStore = create<AppState>()(
           dateFormat: 'DD MMM YYYY',
           pageFormat: 'A4',
           layoutColumns: 'one',
-          sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'certifications'],
+          sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'certifications', 'achievements', 'publications', 'languages', 'interests', 'references'],
           fontSizePt: 10.5,
           lineHeight: 1.25,
           marginHorizontal: 12,
@@ -886,7 +887,27 @@ export const useAppStore = create<AppState>()(
           subtitlePlacement: 'same-line',
           indentBody: false,
           listStyle: 'bullet',
-          footerPageNumbers: true
+          footerPageNumbers: true,
+
+          // Expanded lists and fields
+          certificationsList: [],
+          achievementsList: [],
+          publicationsList: [],
+          languagesList: [],
+          interestsList: [],
+          referencesList: [],
+          customSections: [],
+          showPhoto: false,
+          photoStyle: 'circle',
+          photoSize: 80,
+          nameAlign: 'left',
+          letterSpacing: 'normal',
+          nameSizePx: 32,
+          dividerStyle: 'solid',
+          headerStyle: 'left',
+          zoom: 1,
+          watermarkEnabled: false,
+          watermarkText: 'CONFIDENTIAL'
         };
         return { resumes: [...state.resumes, newResume] };
       }),

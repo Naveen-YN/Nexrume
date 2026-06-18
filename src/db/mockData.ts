@@ -116,7 +116,7 @@ export interface ResumeVersion {
   id: string;
   version: string;
   name: string;
-  template: 'classic' | 'modern' | 'tech';
+  template: string;
   summary: string;
   education: string;
   experience: string;
@@ -192,6 +192,32 @@ export interface ResumeVersion {
   footerEmail?: boolean;
   footerName?: boolean;
   footerCustomText?: string;
+  // Expanded sections & controls
+  showPhoto?: boolean;
+  photoStyle?: 'circle' | 'square';
+  photoSize?: number;
+  certificationsList?: { id: string; name: string; issuer: string; date: string; credentialId: string }[];
+  achievementsList?: { id: string; title: string; description: string }[];
+  publicationsList?: { id: string; title: string; publisher: string; year: string }[];
+  languagesList?: { id: string; language: string; proficiency: string }[];
+  interestsList?: { id: string; name: string }[];
+  referencesList?: { id: string; name: string; position: string; company: string; contact: string }[];
+  customSections?: { id: string; title: string; content: string }[];
+  signatureImage?: string;
+  nameAlign?: 'left' | 'center' | 'right';
+  letterSpacing?: string;
+  nameSizePx?: number;
+  headingColor?: string;
+  bodyTextColor?: string;
+  linkColor?: string;
+  dividerColor?: string;
+  backgroundColor?: string;
+  dividerStyle?: 'solid' | 'dashed' | 'double' | 'wavy' | 'none';
+  headerBackground?: string;
+  headerStyle?: 'centered' | 'left' | 'corporate' | 'card';
+  zoom?: number;
+  watermarkEnabled?: boolean;
+  watermarkText?: string;
 }
 
 export interface RecruiterContact {
