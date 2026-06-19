@@ -38,6 +38,71 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Helper wrapper to filter out CSS oklch/lab color rules that crash html2canvas parser
+  const withSafeStyleSheets = async (callback: () => Promise<any>) => {
+    const originalSheets = Array.from(document.styleSheets);
+    const safeSheets = originalSheets.map((sheet) => {
+      try {
+        if (!sheet.cssRules) return sheet;
+        return new Proxy(sheet, {
+          get(target, prop) {
+            if (prop === 'cssRules') {
+              try {
+                const rules = Array.from(target.cssRules);
+                const filteredRules = rules.filter(rule => {
+                  const text = rule.cssText.toLowerCase();
+                  return !text.includes('lab(') && !text.includes('oklab(') && !text.includes('oklch(');
+                });
+                return new Proxy(filteredRules, {
+                  get(rulesTarget, rulesProp) {
+                    if (rulesProp === 'item') {
+                      return (index: number) => rulesTarget[index];
+                    }
+                    if (rulesProp === 'length') {
+                      return rulesTarget.length;
+                    }
+                    return (rulesTarget as any)[rulesProp];
+                  }
+                });
+              } catch (e) {
+                return target.cssRules;
+              }
+            }
+            return (target as any)[prop];
+          }
+        });
+      } catch (e) {
+        return sheet;
+      }
+    });
+
+    Object.defineProperty(document, 'styleSheets', {
+      get: () => {
+        return new Proxy(safeSheets, {
+          get(target, prop) {
+            if (prop === 'item') {
+              return (index: number) => target[index];
+            }
+            if (prop === 'length') {
+              return target.length;
+            }
+            return (target as any)[prop];
+          }
+        }) as any;
+      },
+      configurable: true
+    });
+
+    try {
+      const result = await callback();
+      delete (document as any).styleSheets;
+      return result;
+    } catch (error) {
+      delete (document as any).styleSheets;
+      throw error;
+    }
+  };
+
   // 1. PDF Export (Client-side via html2canvas & jsPDF)
   const triggerPDFDownload = async () => {
     const element = document.getElementById('resume-print-canvas');
@@ -53,12 +118,15 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
       // Allow a brief delay for the browser to repaint the layout at 100% scale
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      const canvas = await html2canvas(element, {
-        scale: 2.0, // High quality scale
-        useCORS: true,
-        allowTaint: false, // Prevents security errors on export
-        backgroundColor: '#ffffff',
-        logging: true
+      // Run capture within the safe stylesheets wrapper
+      const canvas = await withSafeStyleSheets(async () => {
+        return html2canvas(element, {
+          scale: 2.0, // High quality scale
+          useCORS: true,
+          allowTaint: false, // Prevents security errors on export
+          backgroundColor: '#ffffff',
+          logging: true
+        });
       });
 
       // Restore the original zoom style immediately
