@@ -234,7 +234,7 @@ export const ResumeStudio: React.FC = () => {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
         
         {/* LEFT WORKSPACE (col-span-6): Form editor and controls */}
-        <div className="xl:col-span-6 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-5">
+        <div className="xl:col-span-6 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-5 overflow-y-auto xl:h-[calc(100vh-185px)] scrollbar-thin">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-850 pb-3">
             <div className="flex items-center gap-1 bg-zinc-950/60 p-1.5 rounded-xl border border-zinc-850 shadow-inner w-fit">
               {[
@@ -319,7 +319,7 @@ export const ResumeStudio: React.FC = () => {
         </div>
 
         {/* RIGHT WORKSPACE (col-span-6): Document Sheet Live Preview */}
-        <div className="xl:col-span-6 space-y-4">
+        <div className="xl:col-span-6 space-y-4 overflow-y-auto xl:h-[calc(100vh-185px)] pr-1 scrollbar-thin">
           {/* Floating Controls Toolbar */}
           <div className="flex items-center justify-between bg-zinc-900 border border-zinc-800 px-4 py-3 rounded-2xl text-xs">
             <div className="flex items-center gap-1">

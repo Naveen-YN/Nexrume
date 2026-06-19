@@ -732,11 +732,11 @@ export const Preview: React.FC<PreviewProps> = ({
   return (
     <div 
       id="resume-print-canvas"
-      className="bg-white text-zinc-950 shadow-2xl transition-all duration-350 select-text mx-auto flex flex-col justify-between border border-zinc-200 text-left origin-top relative rounded-sm"
+      className="bg-white text-zinc-950 shadow-2xl transition-all duration-350 select-text mx-auto flex flex-col justify-between border border-zinc-200 text-left relative rounded-sm"
       style={{
         width: activeResume.pageFormat === 'Letter' ? '215.9mm' : '210mm',
         minHeight: activeResume.pageFormat === 'Letter' ? '279.4mm' : '297mm',
-        transform: `scale(${zoom})`,
+        zoom: zoom,
         fontFamily: activeResume.customFont ? `"${activeResume.customFont}", sans-serif` : (activeResume.fontFamily === 'serif' ? 'Georgia, serif' : activeResume.fontFamily === 'mono' ? 'Courier, monospace' : 'Inter, system-ui, sans-serif'),
         fontSize: fontSizeStyle,
         lineHeight: lineHeightStyle,

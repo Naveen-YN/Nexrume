@@ -46,14 +46,19 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
     // Create a clone of the print canvas to capture offscreen without zoom distortion or screen flicker
     const clone = element.cloneNode(true) as HTMLElement;
     
-    // Ensure all styles are preserved and render it offscreen
+    // Ensure all styles are preserved and render it offscreen in standard layout coordinates
     const isLetter = activeResume.pageFormat === 'Letter';
-    clone.style.position = 'absolute';
-    clone.style.left = '-9999px';
-    clone.style.top = '-9999px';
+    clone.style.position = 'fixed';
+    clone.style.left = '0px';
+    clone.style.top = '0px';
+    clone.style.zIndex = '-9999';   // Under all application layers
+    clone.style.opacity = '0.99';    // Opaque so it's captured correctly
+    clone.style.pointerEvents = 'none';
+    clone.style.zoom = '1';          // Force 1:1 native rendering
     clone.style.transform = 'none';
     clone.style.width = isLetter ? '215.9mm' : '210mm';
-    clone.style.height = 'auto'; // Let height grow based on content
+    clone.style.height = 'auto';     // Let height grow based on content
+    clone.style.margin = '0';        // Reset auto centering margins
     
     document.body.appendChild(clone);
 

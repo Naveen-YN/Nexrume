@@ -1716,7 +1716,7 @@ export default function Home() {
         />
 
         {/* Workspace views routing */}
-        <main className={`flex-1 bg-zinc-950 relative ${activeTab === 'tracker' ? 'h-auto overflow-y-auto p-4 space-y-6 lg:h-[calc(100vh-64px)] lg:overflow-hidden lg:flex lg:flex-col lg:p-6' : 'overflow-y-auto p-6 space-y-6 scrollbar-thin'}`}>
+        <main className={`flex-1 bg-zinc-950 relative ${(activeTab === 'tracker' || activeTab === 'resumes') ? 'h-auto overflow-y-auto p-4 space-y-6 lg:h-[calc(100vh-64px)] lg:overflow-hidden lg:flex lg:flex-col lg:p-6' : 'overflow-y-auto p-6 space-y-6 scrollbar-thin'}`}>
           
           {/* BACKGROUND GRIDS FOR PREMIUM GLOW LOOK */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293708_1px,transparent_1px),linear-gradient(to_bottom,#1f293708_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
