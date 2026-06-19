@@ -35,11 +35,12 @@ export const Preview: React.FC<PreviewProps> = ({
   }[activeResume.accentColor || 'indigo'] || '#4f46e5';
 
   // Fallbacks for profile details
-  const resName = activeResume.personalName || userProfile.name || 'Your Full Name';
-  const resTitle = activeResume.personalTitle || userProfile.experience || 'Professional Headline';
-  const resEmail = activeResume.personalEmail || userProfile.email || 'email@example.com';
-  const resPhone = activeResume.personalPhone || userProfile.phone || '+1 (555) 000-0000';
-  const resLocation = activeResume.personalLocation || userProfile.location || 'City, State';
+  const resName = activeResume.personalName !== undefined ? activeResume.personalName : (userProfile.name || 'Your Full Name');
+  const resTitle = activeResume.personalTitle !== undefined ? activeResume.personalTitle : (userProfile.experience || '');
+  const resEmail = activeResume.personalEmail !== undefined ? activeResume.personalEmail : (userProfile.email || '');
+  const resPhone = activeResume.personalPhone !== undefined ? activeResume.personalPhone : (userProfile.phone || '');
+  const resLocation = activeResume.personalLocation !== undefined ? activeResume.personalLocation : (userProfile.location || '');
+
 
   // Setup sizes & typography overrides
   const fontSizeStyle = activeResume.fontSizePt ? `${activeResume.fontSizePt}pt` : (activeResume.fontSize === 'sm' ? '11px' : activeResume.fontSize === 'lg' ? '14px' : '12.5px');
@@ -596,20 +597,24 @@ export const Preview: React.FC<PreviewProps> = ({
     const nameColor = activeResume.headingColor || '#09090b';
     const iconColor = primaryHex;
 
-    // Build the dynamic social fields array
-    const hasSocialFields = activeResume.socialFields && activeResume.socialFields.length > 0;
-    
-    // Mapping of dynamic items
-    const socialItems = hasSocialFields
-      ? (activeResume.socialFields || []).filter(f => !f.hidden && f.value?.trim())
-      : [
-          { field: 'email', label: 'Email', value: resEmail },
-          { field: 'phone', label: 'Phone', value: resPhone },
-          { field: 'location', label: 'Location', value: resLocation },
-          { field: 'linkedin', label: 'LinkedIn', value: activeResume.personalLinkedin },
-          { field: 'github', label: 'GitHub', value: activeResume.personalGithub },
-          { field: 'portfolio', label: 'Portfolio', value: activeResume.personalPortfolio }
-        ].filter(i => i.value?.trim());
+    // Build the dynamic social fields array combining default, legacy and dynamic contact channels
+    const defaultFields = [
+      { field: 'email', label: 'Email', value: resEmail },
+      { field: 'phone', label: 'Phone', value: resPhone },
+      { field: 'location', label: 'Location', value: resLocation },
+    ].filter(i => i.value?.trim());
+
+    const legacySocials = [
+      { field: 'linkedin', label: 'LinkedIn', value: activeResume.personalLinkedin },
+      { field: 'github', label: 'GitHub', value: activeResume.personalGithub },
+      { field: 'portfolio', label: 'Portfolio', value: activeResume.personalPortfolio }
+    ].filter(i => i.value?.trim());
+
+    const dynamicFields = (activeResume.socialFields || [])
+      .filter(f => !f.hidden && f.value?.trim())
+      .map(f => ({ field: f.field, label: f.label || f.field, value: f.value }));
+
+    const socialItems = [...defaultFields, ...legacySocials, ...dynamicFields];
 
     const getFieldIcon = (field: string) => {
       switch (field.toLowerCase()) {
@@ -647,15 +652,17 @@ export const Preview: React.FC<PreviewProps> = ({
         >
           {resName}
         </h1>
-        <p 
-          className="text-[10px] tracking-widest text-zinc-500 uppercase font-black" 
-          style={{ 
-            color: activeResume.applyColorJobTitle ? primaryHex : undefined, 
-            textAlign: activeResume.nameAlign || 'left' 
-          }}
-        >
-          {resTitle}
-        </p>
+        {resTitle && (
+          <p 
+            className="text-[10px] tracking-widest text-zinc-500 uppercase font-black" 
+            style={{ 
+              color: activeResume.applyColorJobTitle ? primaryHex : undefined, 
+              textAlign: activeResume.nameAlign || 'left' 
+            }}
+          >
+            {resTitle}
+          </p>
+        )}
         
         {activeResume.headerDetailsArrangement === 'stacked' ? (
           <div className="flex flex-col gap-0.5 text-[9.5px] text-zinc-650 mt-1 font-mono">

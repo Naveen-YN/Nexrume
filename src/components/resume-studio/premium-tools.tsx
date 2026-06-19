@@ -38,71 +38,6 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Helper wrapper to filter out CSS oklch/lab color rules that crash html2canvas parser
-  const withSafeStyleSheets = async (callback: () => Promise<any>) => {
-    const originalSheets = Array.from(document.styleSheets);
-    const safeSheets = originalSheets.map((sheet) => {
-      try {
-        if (!sheet.cssRules) return sheet;
-        return new Proxy(sheet, {
-          get(target, prop) {
-            if (prop === 'cssRules') {
-              try {
-                const rules = Array.from(target.cssRules);
-                const filteredRules = rules.filter(rule => {
-                  const text = rule.cssText.toLowerCase();
-                  return !text.includes('lab(') && !text.includes('oklab(') && !text.includes('oklch(');
-                });
-                return new Proxy(filteredRules, {
-                  get(rulesTarget, rulesProp) {
-                    if (rulesProp === 'item') {
-                      return (index: number) => rulesTarget[index];
-                    }
-                    if (rulesProp === 'length') {
-                      return rulesTarget.length;
-                    }
-                    return (rulesTarget as any)[rulesProp];
-                  }
-                });
-              } catch (e) {
-                return target.cssRules;
-              }
-            }
-            return (target as any)[prop];
-          }
-        });
-      } catch (e) {
-        return sheet;
-      }
-    });
-
-    Object.defineProperty(document, 'styleSheets', {
-      get: () => {
-        return new Proxy(safeSheets, {
-          get(target, prop) {
-            if (prop === 'item') {
-              return (index: number) => target[index];
-            }
-            if (prop === 'length') {
-              return target.length;
-            }
-            return (target as any)[prop];
-          }
-        }) as any;
-      },
-      configurable: true
-    });
-
-    try {
-      const result = await callback();
-      delete (document as any).styleSheets;
-      return result;
-    } catch (error) {
-      delete (document as any).styleSheets;
-      throw error;
-    }
-  };
-
   // 1. PDF Export (Client-side via html2canvas & jsPDF)
   const triggerPDFDownload = async () => {
     const element = document.getElementById('resume-print-canvas');
@@ -114,23 +49,72 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
     // Reset zoom temporarily to 1 for a high-definition, unscaled capture
     element.style.zoom = '1';
 
+    // Allow a brief delay for the browser to repaint the layout at 100% scale
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    const originalSheets = Array.from(document.styleSheets);
+    const sheetsToReenable: CSSStyleSheet[] = [];
+    const safeStyleElements: HTMLStyleElement[] = [];
+
     try {
-      // Allow a brief delay for the browser to repaint the layout at 100% scale
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      // Helper function to recursively filter out CSS oklch/lab/oklab color rules that crash html2canvas parser
+      const cleanRules = (rules: CSSRuleList | CSSRule[]): string => {
+        let cssText = '';
+        for (let i = 0; i < rules.length; i++) {
+          const rule = rules[i];
+          try {
+            const ruleText = rule.cssText;
+            const ruleTextLower = ruleText.toLowerCase();
+            
+            if (ruleTextLower.includes('lab(') || ruleTextLower.includes('oklab(') || ruleTextLower.includes('oklch(')) {
+              if ('cssRules' in rule && (rule as any).cssRules) {
+                const nestedCSS = cleanRules((rule as any).cssRules);
+                const braceIndex = ruleText.indexOf('{');
+                if (braceIndex > -1) {
+                  const header = ruleText.substring(0, braceIndex + 1);
+                  cssText += `${header}\n${nestedCSS}\n}\n`;
+                }
+              }
+            } else {
+              cssText += ruleText + '\n';
+            }
+          } catch (ruleErr) {
+            // If rule serialization throws, skip it
+          }
+        }
+        return cssText;
+      };
 
-      // Run capture within the safe stylesheets wrapper
-      const canvas = await withSafeStyleSheets(async () => {
-        return html2canvas(element, {
-          scale: 2.0, // High quality scale
-          useCORS: true,
-          allowTaint: false, // Prevents security errors on export
-          backgroundColor: '#ffffff',
-          logging: true
-        });
+      // Extract and clean stylesheets
+      for (let i = 0; i < originalSheets.length; i++) {
+        const sheet = originalSheets[i];
+        try {
+          if (sheet.disabled) continue;
+          if (!sheet.cssRules) continue;
+          
+          const cleanCSS = cleanRules(sheet.cssRules);
+          const styleEl = document.createElement('style');
+          styleEl.setAttribute('data-html2canvas-safe', 'true');
+          styleEl.textContent = cleanCSS;
+          document.head.appendChild(styleEl);
+          safeStyleElements.push(styleEl);
+          
+          sheet.disabled = true;
+          sheetsToReenable.push(sheet);
+        } catch (err) {
+          // Cross-origin/CORS stylesheets may throw. We skip and leave them enabled.
+          console.warn("Could not clean styleSheet:", sheet.href, err);
+        }
+      }
+
+      // Run capture of elements
+      const canvas = await html2canvas(element, {
+        scale: 2.0, // High quality scale
+        useCORS: true,
+        allowTaint: false, // Prevents security errors on export
+        backgroundColor: '#ffffff',
+        logging: true
       });
-
-      // Restore the original zoom style immediately
-      element.style.zoom = oldZoom;
 
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
       
@@ -165,9 +149,17 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
       pdf.save(`${downloadName}.pdf`);
     } catch (e) {
       console.error("PDF download failed:", e);
-      // Restore zoom style on error
-      element.style.zoom = oldZoom;
       alert("Failed to render PDF. Please try again. Error: " + (e as Error).message);
+    } finally {
+      // Restore original stylesheets and clean up safe styles
+      sheetsToReenable.forEach(sheet => {
+        sheet.disabled = false;
+      });
+      safeStyleElements.forEach(el => {
+        el.remove();
+      });
+      // Restore the original zoom style
+      element.style.zoom = oldZoom;
     }
   };
 

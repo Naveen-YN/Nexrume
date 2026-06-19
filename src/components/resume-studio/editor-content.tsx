@@ -40,6 +40,20 @@ export const EditorContent: React.FC<EditorContentProps> = ({
   const [isPhotoDragging, setIsPhotoDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const getEditorFieldValue = (field: string) => {
+    const val = activeResume[field as keyof ResumeVersion];
+    if (val !== undefined) return val as string;
+    switch (field) {
+      case 'personalName': return userProfile.name || '';
+      case 'personalTitle': return userProfile.experience || '';
+      case 'personalEmail': return userProfile.email || '';
+      case 'personalPhone': return userProfile.phone || '';
+      case 'personalLocation': return userProfile.location || '';
+      default: return '';
+    }
+  };
+
+
   // Optional personal fields list
   const allOptionalFields = [
     { field: 'linkedin', label: 'LinkedIn', placeholder: 'e.g. linkedin.com/in/username' },
@@ -538,7 +552,7 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                   <input
                     type="text"
                     placeholder={col.placeholder}
-                    value={activeResume[col.field as keyof ResumeVersion] as string || ''}
+                    value={getEditorFieldValue(col.field)}
                     onChange={e => onUpdateResume({ [col.field]: e.target.value })}
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px]"
                   />
