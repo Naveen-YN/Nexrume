@@ -732,8 +732,10 @@ export const Preview: React.FC<PreviewProps> = ({
   return (
     <div 
       id="resume-print-canvas"
-      className="bg-white text-zinc-950 shadow-2xl transition-all duration-350 select-text w-full max-w-[21cm] mx-auto min-h-[29.7cm] flex flex-col justify-between border border-zinc-200 text-left origin-top relative rounded-sm"
+      className="bg-white text-zinc-950 shadow-2xl transition-all duration-350 select-text mx-auto flex flex-col justify-between border border-zinc-200 text-left origin-top relative rounded-sm"
       style={{
+        width: activeResume.pageFormat === 'Letter' ? '215.9mm' : '210mm',
+        minHeight: activeResume.pageFormat === 'Letter' ? '279.4mm' : '297mm',
         transform: `scale(${zoom})`,
         fontFamily: activeResume.customFont ? `"${activeResume.customFont}", sans-serif` : (activeResume.fontFamily === 'serif' ? 'Georgia, serif' : activeResume.fontFamily === 'mono' ? 'Courier, monospace' : 'Inter, system-ui, sans-serif'),
         fontSize: fontSizeStyle,
@@ -746,12 +748,12 @@ export const Preview: React.FC<PreviewProps> = ({
       }}
     >
       {/* Visual page pagination boundaries (A4 size is 29.7cm height) */}
-      <div className="absolute left-0 right-0 border-b border-dashed border-rose-400/40 pointer-events-none select-none print:hidden z-50 flex items-center justify-end" style={{ top: '29.7cm' }}>
+      <div data-html2canvas-ignore="true" className="absolute left-0 right-0 border-b border-dashed border-rose-400/40 pointer-events-none select-none print:hidden z-50 flex items-center justify-end" style={{ top: '29.7cm' }}>
         <span className="bg-rose-500 text-white font-black text-[8px] px-2 py-0.5 rounded-l uppercase tracking-widest shadow-lg -mt-5">
           Page 1 Boundary
         </span>
       </div>
-      <div className="absolute left-0 right-0 border-b border-dashed border-rose-400/40 pointer-events-none select-none print:hidden z-50 flex items-center justify-end" style={{ top: '59.4cm' }}>
+      <div data-html2canvas-ignore="true" className="absolute left-0 right-0 border-b border-dashed border-rose-400/40 pointer-events-none select-none print:hidden z-50 flex items-center justify-end" style={{ top: '59.4cm' }}>
         <span className="bg-rose-500 text-white font-black text-[8px] px-2 py-0.5 rounded-l uppercase tracking-widest shadow-lg -mt-5">
           Page 2 Boundary
         </span>

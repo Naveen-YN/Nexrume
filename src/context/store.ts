@@ -887,7 +887,7 @@ export const useAppStore = create<AppState>()(
           subtitlePlacement: 'same-line',
           indentBody: false,
           listStyle: 'bullet',
-          footerPageNumbers: true,
+          footerPageNumbers: false,
 
           // Expanded lists and fields
           certificationsList: [],

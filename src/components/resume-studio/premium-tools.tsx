@@ -43,25 +43,40 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
     const element = document.getElementById('resume-print-canvas');
     if (!element) return;
 
-    // Reset zoom transformation temporarily for capture
-    const oldTransform = element.style.transform;
-    element.style.transform = 'scale(1)';
+    // Create a clone of the print canvas to capture offscreen without zoom distortion or screen flicker
+    const clone = element.cloneNode(true) as HTMLElement;
+    
+    // Ensure all styles are preserved and render it offscreen
+    const isLetter = activeResume.pageFormat === 'Letter';
+    clone.style.position = 'absolute';
+    clone.style.left = '-9999px';
+    clone.style.top = '-9999px';
+    clone.style.transform = 'none';
+    clone.style.width = isLetter ? '215.9mm' : '210mm';
+    clone.style.height = 'auto'; // Let height grow based on content
+    
+    document.body.appendChild(clone);
 
     try {
-      const canvas = await html2canvas(element, {
-        scale: 2.5, // Crisp high-definition output
+      // Allow a brief delay for rendering engine to paint the offscreen element
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const canvas = await html2canvas(clone, {
+        scale: 2.0, // High quality scale
         useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff'
+        allowTaint: false, // Prevents security errors on export
+        backgroundColor: '#ffffff',
+        logging: false
       });
 
-      element.style.transform = oldTransform;
+      // Remove the clone from the DOM immediately
+      document.body.removeChild(clone);
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: activeResume.pageFormat === 'Letter' ? 'letter' : 'a4'
+        format: isLetter ? 'letter' : 'a4'
       });
 
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -69,16 +84,33 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
       const imgWidth = pageWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
-      pdf.save(`${activeResume.name.replace(/\s+/g, '_')}_Resume.pdf`);
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Add subsequent pages if it exceeds one page size (with 1.5mm tolerance threshold to avoid empty trailing page)
+      while (heightLeft > 1.5) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const downloadName = (activeResume.name || 'Resume').trim();
+      pdf.save(`${downloadName}.pdf`);
     } catch (e) {
-      console.error(e);
-      element.style.transform = oldTransform;
-      alert("Failed to render PDF canvas. Please try again.");
+      console.error("PDF download failed:", e);
+      if (document.body.contains(clone)) {
+        document.body.removeChild(clone);
+      }
+      alert("Failed to render PDF. Please try again.");
     }
   };
 
-  // 2. DOCX Export ( 轻量级 HTML-to-Word Blob Export)
+  // 2. DOCX Export (轻量级 HTML-to-Word Blob Export)
   const triggerDOCXDownload = () => {
     const canvas = document.getElementById('resume-print-canvas');
     if (!canvas) return;
@@ -94,7 +126,8 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${activeResume.name.replace(/\s+/g, '_')}_Resume.doc`;
+    const downloadName = (activeResume.name || 'Resume').trim();
+    a.download = `${downloadName}.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -120,7 +153,8 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${activeResume.name.replace(/\s+/g, '_')}_Resume_ATS.txt`;
+    const downloadName = (activeResume.name || 'Resume').trim();
+    a.download = `${downloadName}_ATS.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -133,7 +167,8 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${activeResume.name.replace(/\s+/g, '_')}_schema.json`;
+    const downloadName = (activeResume.name || 'Resume').trim();
+    a.download = `${downloadName}.json`;
     a.click();
   };
 
