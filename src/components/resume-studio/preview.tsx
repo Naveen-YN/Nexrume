@@ -669,8 +669,8 @@ export const Preview: React.FC<PreviewProps> = ({
             {socialItems.map((item, idx) => {
               const Icon = getFieldIcon(item.field);
               return (
-                <div key={idx} className={`flex items-center gap-1.5 ${alignClass}`}>
-                  {showIcons && <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />}
+                <div key={idx} className={`flex items-center ${alignClass}`}>
+                  {showIcons && <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor, marginRight: '6px' }} />}
                   <span>{item.value}</span>
                 </div>
               );
@@ -681,26 +681,56 @@ export const Preview: React.FC<PreviewProps> = ({
             {socialItems.map((item, idx) => {
               const Icon = getFieldIcon(item.field);
               return (
-                <div key={idx} className="flex items-center gap-1.5 truncate">
-                  {showIcons && <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />}
+                <div key={idx} className="flex items-center truncate">
+                  {showIcons && <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor, marginRight: '6px' }} />}
                   <span className="truncate">{item.value}</span>
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className={`flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[9.5px] text-zinc-650 mt-1 font-mono ${alignClass}`}>
+          <div 
+            className={`w-full text-[9.5px] text-zinc-650 mt-1 font-mono ${alignTextClass}`}
+            style={{ wordBreak: 'break-word' }}
+          >
             {socialItems.map((item, idx) => {
               const Icon = getFieldIcon(item.field);
               return (
                 <React.Fragment key={idx}>
-                  <div className="flex items-center gap-1">
-                    {showIcons && separator === 'icon' && <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />}
-                    {showIcons && separator !== 'icon' && idx === 0 && <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />}
-                    <span>{item.value}</span>
+                  <div 
+                    className="inline-flex items-center" 
+                    style={{ 
+                      verticalAlign: 'middle',
+                      display: 'inline-flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    {showIcons && separator === 'icon' && (
+                      <Icon 
+                        className="w-3 h-3 shrink-0" 
+                        style={{ color: iconColor, marginRight: '4px', display: 'inline-block', verticalAlign: 'middle' }} 
+                      />
+                    )}
+                    {showIcons && separator !== 'icon' && idx === 0 && (
+                      <Icon 
+                        className="w-3 h-3 shrink-0" 
+                        style={{ color: iconColor, marginRight: '4px', display: 'inline-block', verticalAlign: 'middle' }} 
+                      />
+                    )}
+                    <span style={{ display: 'inline-block', verticalAlign: 'middle' }}>{item.value}</span>
                   </div>
                   {idx < socialItems.length - 1 && separator !== 'icon' && (
-                    <span className="text-zinc-300 font-bold">{separator}</span>
+                    <span 
+                      className="text-zinc-300 font-bold" 
+                      style={{ 
+                        display: 'inline-block', 
+                        verticalAlign: 'middle', 
+                        marginLeft: '8px', 
+                        marginRight: '8px' 
+                      }}
+                    >
+                      {separator}
+                    </span>
                   )}
                 </React.Fragment>
               );
