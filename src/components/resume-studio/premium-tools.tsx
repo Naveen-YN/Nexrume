@@ -43,41 +43,30 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
     const element = document.getElementById('resume-print-canvas');
     if (!element) return;
 
-    // Create a clone of the print canvas to capture offscreen without zoom distortion or screen flicker
-    const clone = element.cloneNode(true) as HTMLElement;
+    // Save the current zoom level of the canvas
+    const oldZoom = element.style.zoom;
     
-    // Ensure all styles are preserved and render it offscreen in standard layout coordinates
-    const isLetter = activeResume.pageFormat === 'Letter';
-    clone.style.position = 'fixed';
-    clone.style.left = '0px';
-    clone.style.top = '0px';
-    clone.style.zIndex = '-9999';   // Under all application layers
-    clone.style.opacity = '0.99';    // Opaque so it's captured correctly
-    clone.style.pointerEvents = 'none';
-    clone.style.zoom = '1';          // Force 1:1 native rendering
-    clone.style.transform = 'none';
-    clone.style.width = isLetter ? '215.9mm' : '210mm';
-    clone.style.height = 'auto';     // Let height grow based on content
-    clone.style.margin = '0';        // Reset auto centering margins
-    
-    document.body.appendChild(clone);
+    // Reset zoom temporarily to 1 for a high-definition, unscaled capture
+    element.style.zoom = '1';
 
     try {
-      // Allow a brief delay for rendering engine to paint the offscreen element
+      // Allow a brief delay for the browser to repaint the layout at 100% scale
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      const canvas = await html2canvas(clone, {
+      const canvas = await html2canvas(element, {
         scale: 2.0, // High quality scale
         useCORS: true,
         allowTaint: false, // Prevents security errors on export
         backgroundColor: '#ffffff',
-        logging: false
+        logging: true
       });
 
-      // Remove the clone from the DOM immediately
-      document.body.removeChild(clone);
+      // Restore the original zoom style immediately
+      element.style.zoom = oldZoom;
 
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      
+      const isLetter = activeResume.pageFormat === 'Letter';
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -108,10 +97,9 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
       pdf.save(`${downloadName}.pdf`);
     } catch (e) {
       console.error("PDF download failed:", e);
-      if (document.body.contains(clone)) {
-        document.body.removeChild(clone);
-      }
-      alert("Failed to render PDF. Please try again.");
+      // Restore zoom style on error
+      element.style.zoom = oldZoom;
+      alert("Failed to render PDF. Please try again. Error: " + (e as Error).message);
     }
   };
 

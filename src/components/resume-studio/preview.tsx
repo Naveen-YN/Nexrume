@@ -737,6 +737,7 @@ export const Preview: React.FC<PreviewProps> = ({
         width: activeResume.pageFormat === 'Letter' ? '215.9mm' : '210mm',
         minHeight: activeResume.pageFormat === 'Letter' ? '279.4mm' : '297mm',
         zoom: zoom,
+        overflow: 'hidden',
         fontFamily: activeResume.customFont ? `"${activeResume.customFont}", sans-serif` : (activeResume.fontFamily === 'serif' ? 'Georgia, serif' : activeResume.fontFamily === 'mono' ? 'Courier, monospace' : 'Inter, system-ui, sans-serif'),
         fontSize: fontSizeStyle,
         lineHeight: lineHeightStyle,
