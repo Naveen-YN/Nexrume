@@ -118,12 +118,23 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
         try {
           const list = JSON.parse(eduStr);
           if (Array.isArray(list)) {
+            const stripHtml = (htmlStr: string) => {
+              if (!htmlStr) return '';
+              return htmlStr
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/p>/gi, '\n')
+                .replace(/<\/li>/gi, '\n')
+                .replace(/<[^>]+>/g, '')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/\n\s*\n+/g, '\n')
+                .trim();
+            };
             return list.map(item => {
               if (item.hidden) return '';
               const header = `${item.degree || ''}, ${item.school || ''}`;
               const dates = [item.startDate, item.endDate].filter(Boolean).join(' - ');
               const loc = item.location ? ` | ${item.location}` : '';
-              const desc = item.description ? `\n${item.description}` : '';
+              const desc = item.description ? `\n${stripHtml(item.description)}` : '';
               return `${header} (${dates}${loc})${desc}`;
             }).filter(Boolean).join('\n\n');
           }

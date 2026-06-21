@@ -9,6 +9,7 @@ import {
   Compass, Library, ExternalLink, RefreshCw
 } from 'lucide-react';
 import { AddContentModal } from './add-content-modal';
+import { RichTextEditor } from './rich-text-editor';
 
 interface EditorContentProps {
   activeResume: ResumeVersion;
@@ -1102,16 +1103,14 @@ export const EditorContent: React.FC<EditorContentProps> = ({
 
                                   <div className="space-y-1">
                                     <span className="text-zinc-555 font-black uppercase text-[9px]">Description</span>
-                                    <textarea
+                                    <RichTextEditor
                                       placeholder="Course: Computer Science and Engineering Specialization in Artificial Intelligence and Machine Learning&#10;CGPA: 8.35"
                                       value={edu.description || ''}
-                                      onChange={e => {
+                                      onChange={htmlVal => {
                                         const list = [...eduList];
-                                        list[idx].description = e.target.value;
+                                        list[idx].description = htmlVal;
                                         syncLegacyList(list, 'edu');
                                       }}
-                                      rows={4}
-                                      className="w-full bg-zinc-955 border border-zinc-800 rounded-lg p-2.5 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px] leading-relaxed font-mono"
                                     />
                                   </div>
                                 </div>

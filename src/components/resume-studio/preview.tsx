@@ -275,11 +275,10 @@ export const Preview: React.FC<PreviewProps> = ({
                     </div>
                     {edu.description && (
                       <div 
-                        className="text-zinc-650 leading-relaxed text-justify text-[10.5px] whitespace-pre-line"
+                        className="text-zinc-650 leading-relaxed text-justify text-[10.5px] rich-text-content"
                         style={{ fontSize: `calc(${fontSizeStyle} - 0.5px)`, lineHeight: lineHeightStyle }}
-                      >
-                        {edu.description}
-                      </div>
+                        dangerouslySetInnerHTML={{ __html: edu.description }}
+                      />
                     )}
                     {!edu.description && edu.gpa && (
                       <div className="text-[9.5px] text-zinc-500 font-bold">

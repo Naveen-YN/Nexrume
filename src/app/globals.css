@@ -108,3 +108,31 @@ select option {
 .animate-scale-in {
   animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Rich Text Editor Content Styles */
+.rich-text-content ul {
+  list-style-type: disc !important;
+  padding-left: 1.25rem !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.rich-text-content ol {
+  list-style-type: decimal !important;
+  padding-left: 1.25rem !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.rich-text-content li {
+  margin-bottom: 0.125rem !important;
+}
+
+.rich-text-content a {
+  color: #4f46e5 !important;
+  text-decoration: underline !important;
+}
+
+.rich-text-content a:hover {
+  color: #6366f1 !important;
+}
