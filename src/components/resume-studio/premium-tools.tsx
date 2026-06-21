@@ -112,6 +112,28 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
 
   // 3. TXT Export (ATS clean text compiler)
   const triggerTXTDownload = () => {
+    const formatEducationTxt = (eduStr: string) => {
+      if (!eduStr) return '';
+      if (eduStr.trim().startsWith('[')) {
+        try {
+          const list = JSON.parse(eduStr);
+          if (Array.isArray(list)) {
+            return list.map(item => {
+              if (item.hidden) return '';
+              const header = `${item.degree || ''}, ${item.school || ''}`;
+              const dates = [item.startDate, item.endDate].filter(Boolean).join(' - ');
+              const loc = item.location ? ` | ${item.location}` : '';
+              const desc = item.description ? `\n${item.description}` : '';
+              return `${header} (${dates}${loc})${desc}`;
+            }).filter(Boolean).join('\n\n');
+          }
+        } catch (e) {
+          // Ignore and fallback
+        }
+      }
+      return eduStr;
+    };
+
     const sections = [
       `=== ${activeResume.personalName || 'Resume'} ===`,
       `${activeResume.personalTitle || ''}`,
@@ -121,7 +143,7 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
       `\n=== TECHNICAL SKILLS ===\n${activeResume.skills || ''}`,
       `\n=== WORK EXPERIENCE ===\n${activeResume.experience || ''}`,
       `\n=== KEY PROJECTS ===\n${activeResume.projects || ''}`,
-      `\n=== EDUCATION ===\n${activeResume.education || ''}`,
+      `\n=== EDUCATION ===\n${formatEducationTxt(activeResume.education || '')}`,
       `\n=== CERTIFICATIONS ===\n${activeResume.certifications || ''}`,
       `\n=== ACHIEVEMENTS ===\n${activeResume.achievements || ''}`
     ];

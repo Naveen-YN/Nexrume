@@ -104,6 +104,28 @@ interface ParsedEducation {
 
 function parseEducation(eduStr: string): ParsedEducation[] {
   if (!eduStr) return [];
+  if (eduStr.trim().startsWith('[')) {
+    try {
+      const parsed = JSON.parse(eduStr);
+      if (Array.isArray(parsed)) {
+        return parsed.map(item => {
+          let duration = item.duration || '';
+          if (!duration && (item.startDate || item.endDate)) {
+            duration = [item.startDate, item.endDate].filter(Boolean).join(' - ');
+          }
+          return {
+            school: item.school || '',
+            degree: item.degree || '',
+            duration,
+            gpa: item.gpa || '',
+            hidden: !!item.hidden
+          };
+        });
+      }
+    } catch (e) {
+      // Fallback to legacy parsing
+    }
+  }
   const lines = eduStr.split('\n').filter(l => l.trim() !== '');
   return lines.map(line => {
     let isHidden = false;

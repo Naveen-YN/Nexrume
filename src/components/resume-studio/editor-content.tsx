@@ -311,6 +311,14 @@ export const EditorContent: React.FC<EditorContentProps> = ({
   // Helper parsers for legacy fields
   const parseLegacyList = (text: string, type: 'exp' | 'edu' | 'proj') => {
     if (!text) return [];
+    if (text.trim().startsWith('[')) {
+      try {
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        // Fallback
+      }
+    }
     const lines = text.split('\n').filter(l => l.trim() !== '');
     return lines.map((line, idx) => {
       let isHidden = false;
@@ -346,9 +354,44 @@ export const EditorContent: React.FC<EditorContentProps> = ({
             duration = durationMatch[1].trim();
             degree = degree.replace(/\([^)]+\)/, '').trim();
           }
-          return { id: `edu-${idx}`, school, degree: degree.trim(), duration, gpa, hidden: isHidden };
+          
+          let startDate = '';
+          let endDate = '';
+          if (duration.includes(' - ')) {
+            const dParts = duration.split(' - ');
+            startDate = dParts[0].trim();
+            endDate = dParts[1].trim();
+          } else if (duration.includes(' – ')) {
+            const dParts = duration.split(' – ');
+            startDate = dParts[0].trim();
+            endDate = dParts[1].trim();
+          } else {
+            startDate = duration;
+          }
+          
+          const description = gpa ? `CGPA: ${gpa}` : '';
+
+          return { 
+            id: `edu-${idx}`, 
+            school, 
+            degree: degree.trim(), 
+            startDate, 
+            endDate, 
+            location: '', 
+            description, 
+            hidden: isHidden 
+          };
         }
-        return { id: `edu-${idx}`, school: cleanLine, degree: '', duration: '', gpa: '', hidden: isHidden };
+        return { 
+          id: `edu-${idx}`, 
+          school: cleanLine, 
+          degree: '', 
+          startDate: '', 
+          endDate: '', 
+          location: '', 
+          description: '', 
+          hidden: isHidden 
+        };
       }
 
       // Proj
@@ -377,15 +420,7 @@ export const EditorContent: React.FC<EditorContentProps> = ({
     }
     
     if (type === 'edu') {
-      const eduStr = list.map(item => {
-        if (!item.school) return '';
-        const prefix = item.hidden ? '[HIDDEN] ' : '';
-        let str = prefix + item.school;
-        if (item.degree) str += ` - ${item.degree}`;
-        if (item.duration) str += ` (${item.duration})`;
-        if (item.gpa) str += ` (GPA ${item.gpa})`;
-        return str;
-      }).filter(Boolean).join('\n');
+      const eduStr = JSON.stringify(list);
       onUpdateResume({ education: eduStr });
     }
 
@@ -922,7 +957,7 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                         <span className="text-zinc-500 font-bold">Entries List</span>
                         <button
                           onClick={() => {
-                            const newEdu = { id: `edu-${Date.now()}`, school: 'University Name', degree: 'Degree Name', duration: 'Start Date - End Date', gpa: '' };
+                            const newEdu = { id: `edu-${Date.now()}`, school: '', degree: '', startDate: '', endDate: '', location: '', description: '', hidden: false };
                             syncLegacyList([...eduList, newEdu], 'edu');
                           }}
                           className="bg-indigo-650 hover:bg-indigo-550 text-[10px] font-black uppercase tracking-wider text-white px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer transition active:scale-[0.98]"
@@ -945,7 +980,9 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                                     {edu.hidden ? 'Hidden' : `School #${idx + 1}`}
                                   </span>
                                   <span className="text-[11px] text-zinc-300 font-bold truncate">
-                                    {edu.school ? `${edu.school} — ${edu.degree}` : 'Empty school details'}
+                                    {edu.degree && edu.school 
+                                      ? `${edu.degree}, ${edu.school}` 
+                                      : edu.school || edu.degree || 'Empty school details'}
                                   </span>
                                 </div>
 
@@ -986,69 +1023,96 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                                     {isEntryExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                                   </button>
                                 </div>
-                              </div>
+                              </div>                              {isEntryExpanded && (
+                                <div className="p-4 space-y-3.5 border-t border-zinc-850 text-xs">
+                                  <div className="space-y-1">
+                                    <span className="text-zinc-555 font-black uppercase text-[9px]">Degree</span>
+                                    <input
+                                      type="text"
+                                      placeholder="e.g. Bachelor of Technology - B.Tech"
+                                      value={edu.degree || ''}
+                                      onChange={e => {
+                                        const list = [...eduList];
+                                        list[idx].degree = e.target.value;
+                                        syncLegacyList(list, 'edu');
+                                      }}
+                                      className="w-full bg-zinc-955 border border-zinc-800 rounded-lg p-2 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px]"
+                                    />
+                                  </div>
 
-                              {isEntryExpanded && (
-                                <div className="p-4 space-y-3 border-t border-zinc-850 text-xs">
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <div className="space-y-1">
+                                    <span className="text-zinc-555 font-black uppercase text-[9px]">School</span>
+                                    <input
+                                      type="text"
+                                      placeholder="e.g. Malla Reddy University"
+                                      value={edu.school || ''}
+                                      onChange={e => {
+                                        const list = [...eduList];
+                                        list[idx].school = e.target.value;
+                                        syncLegacyList(list, 'edu');
+                                      }}
+                                      className="w-full bg-zinc-955 border border-zinc-800 rounded-lg p-2 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px]"
+                                    />
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <div className="space-y-1">
-                                      <span className="text-zinc-555 font-black uppercase text-[9px]">School Name</span>
+                                      <span className="text-zinc-555 font-black uppercase text-[9px]">Start Date</span>
                                       <input
                                         type="text"
-                                        placeholder="e.g. Stanford University"
-                                        value={edu.school}
+                                        placeholder="e.g. 2021"
+                                        value={edu.startDate || ''}
                                         onChange={e => {
                                           const list = [...eduList];
-                                          list[idx].school = e.target.value;
+                                          list[idx].startDate = e.target.value;
                                           syncLegacyList(list, 'edu');
                                         }}
-                                        className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-300 outline-none focus:border-indigo-500"
+                                        className="w-full bg-zinc-955 border border-zinc-800 rounded-lg p-2 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px]"
                                       />
                                     </div>
                                     <div className="space-y-1">
-                                      <span className="text-zinc-555 font-black uppercase text-[9px]">Degree / Major</span>
+                                      <span className="text-zinc-555 font-black uppercase text-[9px]">End Date</span>
                                       <input
                                         type="text"
-                                        placeholder="e.g. B.S. Computer Science"
-                                        value={edu.degree}
+                                        placeholder="e.g. 2025"
+                                        value={edu.endDate || ''}
                                         onChange={e => {
                                           const list = [...eduList];
-                                          list[idx].degree = e.target.value;
+                                          list[idx].endDate = e.target.value;
                                           syncLegacyList(list, 'edu');
                                         }}
-                                        className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-300 outline-none focus:border-indigo-500"
+                                        className="w-full bg-zinc-955 border border-zinc-800 rounded-lg p-2 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px]"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <span className="text-zinc-555 font-black uppercase text-[9px]">Location</span>
+                                      <input
+                                        type="text"
+                                        placeholder="e.g. Hyderabad, Telangana"
+                                        value={edu.location || ''}
+                                        onChange={e => {
+                                          const list = [...eduList];
+                                          list[idx].location = e.target.value;
+                                          syncLegacyList(list, 'edu');
+                                        }}
+                                        className="w-full bg-zinc-955 border border-zinc-800 rounded-lg p-2 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px]"
                                       />
                                     </div>
                                   </div>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                      <span className="text-zinc-555 font-black uppercase text-[9px]">Duration (Dates | Location)</span>
-                                      <input
-                                        type="text"
-                                        placeholder="e.g. Sep 2018 - Jun 2022"
-                                        value={edu.duration}
-                                        onChange={e => {
-                                          const list = [...eduList];
-                                          list[idx].duration = e.target.value;
-                                          syncLegacyList(list, 'edu');
-                                        }}
-                                        className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-300 outline-none focus:border-indigo-500"
-                                      />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <span className="text-zinc-555 font-black uppercase text-[9px]">GPA Score</span>
-                                      <input
-                                        type="text"
-                                        placeholder="e.g. 3.9"
-                                        value={edu.gpa}
-                                        onChange={e => {
-                                          const list = [...eduList];
-                                          list[idx].gpa = e.target.value;
-                                          syncLegacyList(list, 'edu');
-                                        }}
-                                        className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-300 outline-none focus:border-indigo-500"
-                                      />
-                                    </div>
+
+                                  <div className="space-y-1">
+                                    <span className="text-zinc-555 font-black uppercase text-[9px]">Description</span>
+                                    <textarea
+                                      placeholder="Course: Computer Science and Engineering Specialization in Artificial Intelligence and Machine Learning&#10;CGPA: 8.35"
+                                      value={edu.description || ''}
+                                      onChange={e => {
+                                        const list = [...eduList];
+                                        list[idx].description = e.target.value;
+                                        syncLegacyList(list, 'edu');
+                                      }}
+                                      rows={4}
+                                      className="w-full bg-zinc-955 border border-zinc-800 rounded-lg p-2.5 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px] leading-relaxed font-mono"
+                                    />
                                   </div>
                                 </div>
                               )}

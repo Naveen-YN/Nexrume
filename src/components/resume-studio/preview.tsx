@@ -199,47 +199,95 @@ export const Preview: React.FC<PreviewProps> = ({
         );
 
       case 'education':
-        const eduLines = (activeResume.education || '').split('\n').filter(l => l.trim() !== '');
-        if (eduLines.length === 0) return null;
+        const eduData = activeResume.education || '';
+        let eduList: any[] = [];
+        if (eduData.trim().startsWith('[')) {
+          try {
+            eduList = JSON.parse(eduData);
+          } catch (e) {
+            eduList = [];
+          }
+        }
+        
+        if (eduList.length === 0) {
+          // Fallback to legacy text parsing
+          const parseLegacyEdu = (text: string) => {
+            const lines = text.split('\n').filter(l => l.trim() !== '');
+            return lines.map((line, idx) => {
+              let isHidden = false;
+              let cleanLine = line.trim();
+              if (cleanLine.startsWith('[HIDDEN]')) {
+                isHidden = true;
+                cleanLine = cleanLine.substring(8).trim();
+              }
+              const parts = cleanLine.split(' - ');
+              if (parts.length >= 2) {
+                const school = parts[0].trim();
+                const rest = parts.slice(1).join(' - ');
+                let gpa = '';
+                let degree = rest;
+                const gpaMatch = rest.match(/\(GPA\s*:?\s*([^)]+)\)/i);
+                if (gpaMatch) {
+                  gpa = gpaMatch[1].trim();
+                  degree = rest.replace(/\(GPA\s*:?\s*[^)]+\)/i, '').trim();
+                }
+                let duration = '';
+                const durationMatch = degree.match(/\(([^)]+)\)/);
+                if (durationMatch && !durationMatch[0].toLowerCase().includes('gpa')) {
+                  duration = durationMatch[1].trim();
+                  degree = degree.replace(/\([^)]+\)/, '').trim();
+                }
+                return { school, degree, duration, gpa, hidden: isHidden, location: '', description: '' };
+              }
+              return { school: cleanLine, degree: '', duration: '', gpa: '', hidden: isHidden, location: '', description: '' };
+            });
+          };
+          eduList = parseLegacyEdu(eduData);
+        }
+
+        const visibleEdu = eduList.filter(item => !item.hidden);
+        if (visibleEdu.length === 0) return null;
+
         return (
           <div key="education" className="space-y-1.5 text-left" style={spaceBottomStyle}>
             {renderHeading('Education')}
-            <div className="space-y-2 flex flex-col" style={{ gap: `${activeResume.entrySpacing || 4}px` }}>
-              {eduLines.map((line, idx) => {
-                if (line.startsWith('[HIDDEN]')) return null;
-                const cleanLine = line.replace('[HIDDEN]', '').trim();
-                const parts = cleanLine.split(' - ');
-                if (parts.length >= 2) {
-                  const school = parts[0].trim();
-                  const rest = parts.slice(1).join(' - ');
-                  let gpa = '';
-                  let degree = rest;
-                  const gpaMatch = rest.match(/\(GPA\s*:?\s*([^)]+)\)/i);
-                  if (gpaMatch) {
-                    gpa = gpaMatch[1].trim();
-                    degree = rest.replace(/\(GPA\s*:?\s*[^)]+\)/i, '').trim();
-                  }
-                  let duration = '';
-                  const durationMatch = degree.match(/\(([^)]+)\)/);
-                  if (durationMatch && !durationMatch[0].toLowerCase().includes('gpa')) {
-                    duration = durationMatch[1].trim();
-                    degree = degree.replace(/\([^)]+\)/, '').trim();
-                  }
-
-                  return (
-                    <div key={idx} className="space-y-0.5 text-left">
-                      <div className="flex justify-between items-baseline font-bold text-zinc-850 text-[11px]" style={{ fontSize: fontSizeStyle }}>
-                        <span>
-                          {school}{' '}
-                          <span className="font-semibold text-zinc-500">— {degree}</span>
-                        </span>
-                        <span className="text-[9.5px] text-zinc-500 font-normal font-mono">{duration}</span>
-                      </div>
-                      {gpa && <div className="text-[9.5px] text-zinc-500 font-bold">GPA: {gpa}</div>}
-                    </div>
-                  );
+            <div className="space-y-3 flex flex-col" style={{ gap: `${activeResume.entrySpacing || 6}px` }}>
+              {visibleEdu.map((edu, idx) => {
+                const leftParts = [edu.degree, edu.school].filter(Boolean);
+                const leftText = leftParts.join(', ');
+                
+                let durationStr = '';
+                if (edu.startDate || edu.endDate) {
+                  durationStr = [edu.startDate, edu.endDate].filter(Boolean).join(' – ');
+                } else if (edu.duration) {
+                  durationStr = edu.duration;
                 }
-                return <div key={idx} className="text-[11px] text-zinc-650">{cleanLine}</div>;
+                
+                const rightParts = [durationStr, edu.location].filter(Boolean).join(' | ');
+
+                return (
+                  <div key={idx} className="space-y-0.5 text-left">
+                    <div className="flex justify-between items-baseline font-bold text-zinc-850 text-[11px]" style={{ fontSize: fontSizeStyle }}>
+                      <span>{leftText}</span>
+                      {rightParts && (
+                        <span className="text-[9.5px] text-zinc-500 font-normal font-mono">{rightParts}</span>
+                      )}
+                    </div>
+                    {edu.description && (
+                      <div 
+                        className="text-zinc-650 leading-relaxed text-justify text-[10.5px] whitespace-pre-line"
+                        style={{ fontSize: `calc(${fontSizeStyle} - 0.5px)`, lineHeight: lineHeightStyle }}
+                      >
+                        {edu.description}
+                      </div>
+                    )}
+                    {!edu.description && edu.gpa && (
+                      <div className="text-[9.5px] text-zinc-500 font-bold">
+                        CGPA: {edu.gpa}
+                      </div>
+                    )}
+                  </div>
+                );
               })}
             </div>
           </div>
