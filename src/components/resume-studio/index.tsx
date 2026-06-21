@@ -3,13 +3,13 @@ import { useAppStore } from '../../context/store';
 import { EditorContent } from './editor-content';
 import { EditorCustomize } from './editor-customize';
 import { EditorAi } from './editor-ai';
-import { AtsScanner } from './ats-scanner';
 import { Preview } from './preview';
 import { PremiumTools } from './premium-tools';
 import { 
   FileText, Sparkles, Compass, Plus, Undo2, Redo2, 
   ZoomIn, ZoomOut, Maximize2, Minimize2, Smartphone, 
-  Monitor, RefreshCw, Trash2, Award, Info, Copy, Columns, X, CheckSquare
+  Monitor, RefreshCw, Trash2, Info, Copy, Columns, X, CheckSquare,
+  Download
 } from 'lucide-react';
 
 export const ResumeStudio: React.FC = () => {
@@ -28,7 +28,6 @@ export const ResumeStudio: React.FC = () => {
   const [zoom, setZoom] = useState(0.85);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
-  const [showAtsDrawer, setShowAtsDrawer] = useState(false);
   
   // Autosave status
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'draft'>('saved');
@@ -43,6 +42,53 @@ export const ResumeStudio: React.FC = () => {
 
   // Toast notifications
   const [toastMsg, setToastMsg] = useState('');
+
+  // PDF Export States
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    if (isDownloadingPdf) return;
+    setIsDownloadingPdf(true);
+
+    try {
+      const response = await fetch('/api/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          activeResume,
+          userProfile
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Server-side PDF generation failed');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      const firstName = (userProfile?.name || 'Resume').split(' ')[0] || 'Resume';
+      const lastName = (userProfile?.name || '').split(' ').slice(1).join('_') || '';
+      const safeLastName = lastName ? `_${lastName}` : '';
+      const downloadName = `${firstName}${safeLastName}_Resume.pdf`;
+
+      link.download = downloadName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("PDF download failed:", e);
+      alert("Failed to render PDF: " + (e as Error).message);
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
 
   const activeResume = resumes.find(r => r.id === selectedResumeId) || resumes[0];
   const compareTargetResume = resumes.find(r => r.id === compareTargetId);
@@ -361,11 +407,6 @@ export const ResumeStudio: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1 text-[9px] font-bold text-zinc-500 uppercase tracking-wider">
-                <RefreshCw className={`w-3 h-3 ${saveStatus === 'saving' ? 'animate-spin text-indigo-400' : ''}`} />
-                <span>{saveStatus === 'saving' ? 'Saving...' : 'Auto-Saved'}</span>
-              </span>
-              
               <button
                 onClick={() => setIsMobileView(!isMobileView)}
                 className={`p-1.5 border rounded-lg cursor-pointer transition ${
@@ -377,32 +418,24 @@ export const ResumeStudio: React.FC = () => {
               </button>
 
               <button
-                onClick={() => setShowAtsDrawer(!showAtsDrawer)}
-                className={`flex items-center gap-1 py-1.5 px-2.5 rounded-lg border text-[10px] font-bold transition cursor-pointer ${
-                  activeResume.atsScore >= 80 
-                    ? 'bg-emerald-955/20 border-emerald-900/30 text-emerald-450' 
-                    : 'bg-indigo-955/20 border-indigo-900/30 text-indigo-400'
-                }`}
+                onClick={handleDownloadPdf}
+                disabled={isDownloadingPdf}
+                className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-indigo-650 hover:bg-indigo-600 disabled:bg-zinc-800 text-white text-[10px] font-bold transition cursor-pointer disabled:cursor-not-allowed select-none shadow-sm active:scale-[0.98]"
               >
-                <Award className="w-3.5 h-3.5" />
-                <span>ATS: {activeResume.atsScore}%</span>
+                {isDownloadingPdf ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Downloading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download PDF</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
-
-          {/* ATS Drawer */}
-          {showAtsDrawer && (
-            <div className="animate-fade-in">
-              <AtsScanner 
-                activeResume={activeResume} 
-                onUpdateScore={(score) => {
-                  if (activeResume.atsScore !== score) {
-                    updateResume(activeResume.id, { atsScore: score });
-                  }
-                }} 
-              />
-            </div>
-          )}
 
           {/* Document Preview Canvas Wrapper */}
           <div className={`${isMobileView ? 'max-w-[320px] mx-auto border-8 border-zinc-850 rounded-[32px] overflow-hidden shadow-2xl' : ''}`}>
