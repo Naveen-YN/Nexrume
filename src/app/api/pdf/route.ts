@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
+import fs from 'fs';
+import path from 'path';
+
+// Enforce max duration for serverless execution on Vercel
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
+  let browser = null;
   try {
     const { activeResume, userProfile } = await request.json();
     
@@ -15,27 +23,75 @@ export async function POST(request: Request) {
     const requestUrl = new URL(request.url);
     const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
 
-    console.log(`[API PDF] Launching Puppeteer browser to print to PDF. Base URL: ${baseUrl}`);
+    console.log(`[API PDF] Launching Puppeteer core to print PDF. Base URL: ${baseUrl}`);
 
-    // Launch headless Chromium
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    // Check if running on Vercel or production serverless env
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' || !!process.env.VERCEL;
+
+    if (isProd) {
+      console.log(`[API PDF] Production mode detected. Launching @sparticuz/chromium.`);
+      
+      // sparticuz/chromium configuration
+      browser = await puppeteer.launch({
+        args: [
+          ...chromium.args,
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process'
+        ],
+        defaultViewport: {
+          width: 1200,
+          height: 1600,
+          deviceScaleFactor: 2
+        },
+        executablePath: await chromium.executablePath(),
+        headless: true
+      });
+    } else {
+      console.log(`[API PDF] Development mode detected. Searching for local Chrome.`);
+      
+      // Locate local Chrome installation on Windows
+      const paths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        path.join(process.env.LOCALAPPDATA || '', 'Google\\Chrome\\Application\\chrome.exe')
+      ];
+
+      let localPath = '';
+      for (const p of paths) {
+        if (fs.existsSync(p)) {
+          localPath = p;
+          break;
+        }
+      }
+
+      if (!localPath) {
+        throw new Error("Local Chrome executable not found. Please install Google Chrome or update the path list.");
+      }
+
+      console.log(`[API PDF] Launching local Chrome: ${localPath}`);
+      browser = await puppeteer.launch({
+        executablePath: localPath,
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        defaultViewport: {
+          width: 1200,
+          height: 1600,
+          deviceScaleFactor: 2
+        }
+      });
+    }
 
     const page = await browser.newPage();
 
-    // Set viewport dimensions to match typical A4 desktop size
-    await page.setViewport({
-      width: 1200,
-      height: 1600,
-      deviceScaleFactor: 2.0 // Expose high DPI asset rendering
-    });
-
-    // Navigate to the clean print page
+    // Navigate to the print page
     await page.goto(`${baseUrl}/resume/print`, {
       waitUntil: 'networkidle0',
-      timeout: 15000
+      timeout: 25000 // 25s timeout limit for page load
     });
 
     // Wait for React to mount and define the render hook
@@ -72,6 +128,7 @@ export async function POST(request: Request) {
     });
 
     await browser.close();
+    browser = null;
 
     // Generate filename: FirstName_LastName_Resume.pdf
     const firstName = (userProfile.name || 'Resume').split(' ')[0] || 'Resume';
@@ -91,6 +148,13 @@ export async function POST(request: Request) {
 
   } catch (err) {
     console.error("[API PDF] Puppeteer generation failed:", err);
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeErr) {
+        // Ignore
+      }
+    }
     return NextResponse.json(
       { error: 'Failed to generate PDF', details: (err as Error).message },
       { status: 500 }
