@@ -221,13 +221,21 @@ export const TemplateRenderer: React.FC<TemplateRenderProps> = ({
             <div className="col-span-4 bg-zinc-50/50 p-5 border-r border-zinc-150 flex flex-col gap-4">
               {sectionOrder
                 .filter(s => sidebarSectionList.includes(s))
-                .map(s => renderSection(s))}
+                .map(s => (
+                  <div key={s} className="section-card-print">
+                    {renderSection(s)}
+                  </div>
+                ))}
             </div>
             {/* Right Main Content */}
             <div className="col-span-8 p-6 flex flex-col gap-4">
               {sectionOrder
                 .filter(s => !sidebarSectionList.includes(s))
-                .map(s => renderSection(s))}
+                .map(s => (
+                  <div key={s} className="section-card-print">
+                    {renderSection(s)}
+                  </div>
+                ))}
             </div>
           </div>
         </div>
@@ -257,13 +265,21 @@ export const TemplateRenderer: React.FC<TemplateRenderProps> = ({
             <div className="col-span-8 p-6 flex flex-col gap-4 border-r border-zinc-150">
               {sectionOrder
                 .filter(s => !sidebarSectionList.includes(s))
-                .map(s => renderSection(s))}
+                .map(s => (
+                  <div key={s} className="section-card-print">
+                    {renderSection(s)}
+                  </div>
+                ))}
             </div>
             {/* Right Sidebar */}
             <div className="col-span-4 bg-zinc-50/50 p-5 flex flex-col gap-4">
               {sectionOrder
                 .filter(s => sidebarSectionList.includes(s))
-                .map(s => renderSection(s))}
+                .map(s => (
+                  <div key={s} className="section-card-print">
+                    {renderSection(s)}
+                  </div>
+                ))}
             </div>
           </div>
         </div>
@@ -293,13 +309,21 @@ export const TemplateRenderer: React.FC<TemplateRenderProps> = ({
             <div className="col-span-6 flex flex-col gap-4">
               {sectionOrder
                 .filter((_, idx) => idx % 2 === 0)
-                .map(s => renderSection(s))}
+                .map(s => (
+                  <div key={s} className="section-card-print">
+                    {renderSection(s)}
+                  </div>
+                ))}
             </div>
             {/* Right 50% Column */}
             <div className="col-span-6 flex flex-col gap-4">
               {sectionOrder
                 .filter((_, idx) => idx % 2 !== 0)
-                .map(s => renderSection(s))}
+                .map(s => (
+                  <div key={s} className="section-card-print">
+                    {renderSection(s)}
+                  </div>
+                ))}
             </div>
           </div>
         </div>
@@ -325,7 +349,11 @@ export const TemplateRenderer: React.FC<TemplateRenderProps> = ({
             </div>
           </div>
           <div className="p-6 flex flex-col gap-4">
-            {sectionOrder.map(s => renderSection(s))}
+            {sectionOrder.map(s => (
+              <div key={s} className="section-card-print">
+                {renderSection(s)}
+              </div>
+            ))}
           </div>
         </div>
         <div className="px-6 py-2 border-t border-zinc-150 bg-zinc-50">
@@ -350,7 +378,11 @@ export const TemplateRenderer: React.FC<TemplateRenderProps> = ({
           </div>
         )}
         <div className="flex flex-col gap-4">
-          {sectionOrder.map(s => renderSection(s))}
+          {sectionOrder.map(s => (
+            <div key={s} className="section-card-print">
+              {renderSection(s)}
+            </div>
+          ))}
         </div>
       </div>
       {renderFooter()}

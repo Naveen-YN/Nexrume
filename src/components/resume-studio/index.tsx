@@ -418,6 +418,7 @@ export const ResumeStudio: React.FC = () => {
           {/* Premium tools panel */}
           <PremiumTools 
             activeResume={activeResume} 
+            userProfile={userProfile}
             onUpdateResume={(updates) => updateResume(activeResume.id, updates)} 
             shareUrl={shareUrl}
           />

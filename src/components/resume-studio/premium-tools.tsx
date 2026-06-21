@@ -1,20 +1,20 @@
 import React, { useState, useRef } from 'react';
-import { ResumeVersion } from '../../db/mockData';
+import { ResumeVersion, UserProfile } from '../../db/mockData';
 import { 
   Download, FileSpreadsheet, Share2, Clipboard, 
   Check, QrCode, FileText, Code, Palette, PenTool, Sparkles 
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 
 interface PremiumToolsProps {
   activeResume: ResumeVersion;
+  userProfile: UserProfile;
   onUpdateResume: (updates: Partial<ResumeVersion>) => void;
   shareUrl: string;
 }
 
 export const PremiumTools: React.FC<PremiumToolsProps> = ({ 
   activeResume, 
+  userProfile,
   onUpdateResume,
   shareUrl
 }) => {
@@ -38,128 +38,52 @@ export const PremiumTools: React.FC<PremiumToolsProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // 1. PDF Export (Client-side via html2canvas & jsPDF)
+  // 1. PDF Export (Server-side via Puppeteer API)
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
   const triggerPDFDownload = async () => {
-    const element = document.getElementById('resume-print-canvas');
-    if (!element) return;
-
-    // Save the current zoom level of the canvas
-    const oldZoom = element.style.zoom;
-    
-    // Reset zoom temporarily to 1 for a high-definition, unscaled capture
-    element.style.zoom = '1';
-
-    // Allow a brief delay for the browser to repaint the layout at 100% scale
-    await new Promise((resolve) => setTimeout(resolve, 150));
-
-    const originalSheets = Array.from(document.styleSheets);
-    const sheetsToReenable: CSSStyleSheet[] = [];
-    const safeStyleElements: HTMLStyleElement[] = [];
+    if (isDownloadingPdf) return;
+    setIsDownloadingPdf(true);
 
     try {
-      // Helper function to recursively filter out CSS oklch/lab/oklab color rules that crash html2canvas parser
-      const cleanRules = (rules: CSSRuleList | CSSRule[]): string => {
-        let cssText = '';
-        for (let i = 0; i < rules.length; i++) {
-          const rule = rules[i];
-          try {
-            const ruleText = rule.cssText;
-            const ruleTextLower = ruleText.toLowerCase();
-            
-            if (ruleTextLower.includes('lab(') || ruleTextLower.includes('oklab(') || ruleTextLower.includes('oklch(')) {
-              if ('cssRules' in rule && (rule as any).cssRules) {
-                const nestedCSS = cleanRules((rule as any).cssRules);
-                const braceIndex = ruleText.indexOf('{');
-                if (braceIndex > -1) {
-                  const header = ruleText.substring(0, braceIndex + 1);
-                  cssText += `${header}\n${nestedCSS}\n}\n`;
-                }
-              }
-            } else {
-              cssText += ruleText + '\n';
-            }
-          } catch (ruleErr) {
-            // If rule serialization throws, skip it
-          }
-        }
-        return cssText;
-      };
-
-      // Extract and clean stylesheets
-      for (let i = 0; i < originalSheets.length; i++) {
-        const sheet = originalSheets[i];
-        try {
-          if (sheet.disabled) continue;
-          if (!sheet.cssRules) continue;
-          
-          const cleanCSS = cleanRules(sheet.cssRules);
-          const styleEl = document.createElement('style');
-          styleEl.setAttribute('data-html2canvas-safe', 'true');
-          styleEl.textContent = cleanCSS;
-          document.head.appendChild(styleEl);
-          safeStyleElements.push(styleEl);
-          
-          sheet.disabled = true;
-          sheetsToReenable.push(sheet);
-        } catch (err) {
-          // Cross-origin/CORS stylesheets may throw. We skip and leave them enabled.
-          console.warn("Could not clean styleSheet:", sheet.href, err);
-        }
-      }
-
-      // Run capture of elements
-      const canvas = await html2canvas(element, {
-        scale: 2.0, // High quality scale
-        useCORS: true,
-        allowTaint: false, // Prevents security errors on export
-        backgroundColor: '#ffffff',
-        logging: true
+      const response = await fetch('/api/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          activeResume,
+          userProfile
+        }),
       });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Server-side PDF generation failed');
+      }
+
+      // Read response as a blob and download it
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
       
-      const isLetter = activeResume.pageFormat === 'Letter';
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: isLetter ? 'letter' : 'a4'
-      });
+      // Determine filename: FirstName_LastName_Resume.pdf
+      const firstName = (userProfile.name || 'Resume').split(' ')[0] || 'Resume';
+      const lastName = (userProfile.name || '').split(' ').slice(1).join('_') || '';
+      const safeLastName = lastName ? `_${lastName}` : '';
+      const downloadName = `${firstName}${safeLastName}_Resume.pdf`;
 
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      // Add first page
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      // Add subsequent pages if it exceeds one page size (with 1.5mm tolerance threshold to avoid empty trailing page)
-      while (heightLeft > 1.5) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      const downloadName = (activeResume.name || 'Resume').trim();
-      pdf.save(`${downloadName}.pdf`);
+      link.download = downloadName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (e) {
       console.error("PDF download failed:", e);
-      alert("Failed to render PDF. Please try again. Error: " + (e as Error).message);
+      alert("Failed to render PDF: " + (e as Error).message);
     } finally {
-      // Restore original stylesheets and clean up safe styles
-      sheetsToReenable.forEach(sheet => {
-        sheet.disabled = false;
-      });
-      safeStyleElements.forEach(el => {
-        el.remove();
-      });
-      // Restore the original zoom style
-      element.style.zoom = oldZoom;
+      setIsDownloadingPdf(false);
     }
   };
 
@@ -394,10 +318,15 @@ ${activeResume.personalName || 'Candidate'}`;
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 onClick={triggerPDFDownload}
-                className="bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white px-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition shadow-lg cursor-pointer"
+                disabled={isDownloadingPdf}
+                className={`bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white px-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition shadow-lg cursor-pointer ${isDownloadingPdf ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
-                <Download className="w-4 h-4" />
-                <span>Download PDF</span>
+                {isDownloadingPdf ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                <span>{isDownloadingPdf ? 'Generating...' : 'Download PDF'}</span>
               </button>
 
               <button
