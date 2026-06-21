@@ -207,10 +207,14 @@ export const TemplateRenderer: React.FC<TemplateRenderProps> = ({
       <div className="flex flex-col justify-between h-full min-h-[29.7cm] flex-1 bg-white text-zinc-900">
         <div>
           {/* Header */}
-          <div className="p-6 pb-2 flex justify-between items-start gap-4">
-            <div className="flex-1">{renderHeader()}</div>
-            {renderPhotoBlock()}
-          </div>
+          {(!activeResume.showPhoto || !activeResume.personalPhoto) ? (
+            <div className="p-6 pb-2 w-full">{renderHeader()}</div>
+          ) : (
+            <div className="p-6 pb-2 flex justify-between items-start gap-4">
+              <div className="flex-1">{renderHeader()}</div>
+              {renderPhotoBlock()}
+            </div>
+          )}
           {/* Columns */}
           <div className="grid grid-cols-12 items-stretch border-t border-zinc-150">
             {/* Left Sidebar */}
@@ -239,10 +243,14 @@ export const TemplateRenderer: React.FC<TemplateRenderProps> = ({
       <div className="flex flex-col justify-between h-full min-h-[29.7cm] flex-1 bg-white text-zinc-900">
         <div>
           {/* Header */}
-          <div className="p-6 pb-2 flex justify-between items-start gap-4">
-            <div className="flex-1">{renderHeader()}</div>
-            {renderPhotoBlock()}
-          </div>
+          {(!activeResume.showPhoto || !activeResume.personalPhoto) ? (
+            <div className="p-6 pb-2 w-full">{renderHeader()}</div>
+          ) : (
+            <div className="p-6 pb-2 flex justify-between items-start gap-4">
+              <div className="flex-1">{renderHeader()}</div>
+              {renderPhotoBlock()}
+            </div>
+          )}
           {/* Columns */}
           <div className="grid grid-cols-12 items-stretch border-t border-zinc-150">
             {/* Left Main Content */}
@@ -270,10 +278,16 @@ export const TemplateRenderer: React.FC<TemplateRenderProps> = ({
     return (
       <div className="flex flex-col justify-between h-full min-h-[29.7cm] flex-1 p-6 bg-white text-zinc-900">
         <div>
-          <div className="flex justify-between items-start gap-4 mb-4 pb-3 border-b border-zinc-150">
-            <div className="flex-1">{renderHeader()}</div>
-            {renderPhotoBlock()}
-          </div>
+          {(!activeResume.showPhoto || !activeResume.personalPhoto) ? (
+            <div className="w-full mb-4 pb-3 border-b border-zinc-150">
+              {renderHeader()}
+            </div>
+          ) : (
+            <div className="flex justify-between items-start gap-4 mb-4 pb-3 border-b border-zinc-150">
+              <div className="flex-1">{renderHeader()}</div>
+              {renderPhotoBlock()}
+            </div>
+          )}
           <div className="grid grid-cols-12 gap-6">
             {/* Left 50% Column */}
             <div className="col-span-6 flex flex-col gap-4">
@@ -325,10 +339,16 @@ export const TemplateRenderer: React.FC<TemplateRenderProps> = ({
   return (
     <div className="flex flex-col justify-between h-full min-h-[29.7cm] flex-1 p-6 bg-white text-zinc-900">
       <div>
-        <div className="flex justify-between items-start gap-4 mb-4">
-          <div className="flex-1">{renderHeader()}</div>
-          {renderPhotoBlock()}
-        </div>
+        {(!activeResume.showPhoto || !activeResume.personalPhoto) ? (
+          <div className="w-full mb-4">
+            {renderHeader()}
+          </div>
+        ) : (
+          <div className="flex justify-between items-start gap-4 mb-4">
+            <div className="flex-1">{renderHeader()}</div>
+            {renderPhotoBlock()}
+          </div>
+        )}
         <div className="flex flex-col gap-4">
           {sectionOrder.map(s => renderSection(s))}
         </div>

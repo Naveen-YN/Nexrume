@@ -640,14 +640,15 @@ export const Preview: React.FC<PreviewProps> = ({
     const showIcons = activeResume.linkIconEnabled !== false;
 
     return (
-      <div className={`space-y-1.5 ${alignTextClass} w-full`}>
+      <div className={`${alignTextClass} w-full`}>
         <h1 
           className={`${nameWeight} tracking-tight leading-tight`} 
           style={{ 
             color: nameColor,
             fontSize: activeResume.nameSizePx ? `${activeResume.nameSizePx}px` : '32px',
             textAlign: activeResume.nameAlign || 'left',
-            letterSpacing: letterSpacingStyle === 'loose' ? '0.05em' : letterSpacingStyle === 'tight' ? '-0.02em' : 'normal'
+            letterSpacing: letterSpacingStyle === 'loose' ? '0.05em' : letterSpacingStyle === 'tight' ? '-0.02em' : 'normal',
+            marginBottom: resTitle ? '4px' : '8px'
           }}
         >
           {resName}
@@ -657,7 +658,8 @@ export const Preview: React.FC<PreviewProps> = ({
             className="text-[10px] tracking-widest text-zinc-500 uppercase font-black" 
             style={{ 
               color: activeResume.applyColorJobTitle ? primaryHex : undefined, 
-              textAlign: activeResume.nameAlign || 'left' 
+              textAlign: activeResume.nameAlign || 'left',
+              marginBottom: '8px'
             }}
           >
             {resTitle}
