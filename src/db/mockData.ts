@@ -208,7 +208,13 @@ export interface ResumeVersion {
   languagesList?: { id: string; language: string; proficiency: string; hidden?: boolean }[];
   interestsList?: { id: string; name: string; hidden?: boolean }[];
   referencesList?: { id: string; name: string; position: string; company: string; contact: string; hidden?: boolean }[];
-  customSections?: { id: string; title: string; content: string; hidden?: boolean }[];
+  customSections?: { id: string; title: string; content: string; hidden?: boolean; isSkillType?: boolean }[];
+  sectionSettings?: Record<string, {
+    title?: string;
+    icon?: string;
+    showIcon?: boolean;
+    customType?: 'Normal' | 'Skill';
+  }>;
   signatureImage?: string;
   nameAlign?: 'left' | 'center' | 'right';
   letterSpacing?: string;

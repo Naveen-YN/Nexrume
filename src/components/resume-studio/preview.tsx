@@ -6,13 +6,90 @@ import {
   GraduationCap, Code, ShieldAlert, Cpu, Database, Flag, 
   Calendar, Shield, Clock, Info, Link as LinkIcon, Heart, 
   Bookmark, CheckCircle, Trophy, Users, Landmark, PenTool, 
-  Compass, Library
+  Compass, Library, FileText, Music, Home, Folder, Newspaper, Share2, 
+  Brain, Puzzle, Pencil, MousePointer, RefreshCw, Atom, Luggage, Bike, 
+  Sparkles, User
 } from 'lucide-react';
 import { 
   FaLinkedin, FaGlobe, FaTwitter, FaYoutube, FaTelegram, 
   FaDiscord, FaSlack, FaMedium, FaInstagram, FaSkype, FaFacebook 
 } from 'react-icons/fa';
 import { SiGithub, SiLeetcode, SiCodechef, SiHackerrank } from 'react-icons/si';
+
+const iconMap: Record<string, React.ComponentType<any>> = {
+  award: Award,
+  certificate: FileText,
+  books: BookOpen,
+  education: GraduationCap,
+  music: Music,
+  globe: Globe,
+  home: Home,
+  briefcase: Briefcase,
+  contact: User,
+  folder: Folder,
+  newspaper: Newspaper,
+  network: Share2,
+  brain: Brain,
+  puzzle: Puzzle,
+  pencil: Pencil,
+  pointer: MousePointer,
+  sync: RefreshCw,
+  atom: Atom,
+  suitcase: Luggage,
+  bicycle: Bike,
+  code: Code,
+  sparkles: Sparkles
+};
+
+const getSectionIconName = (sectionId: string, activeResume: any) => {
+  const customSettings = activeResume.sectionSettings?.[sectionId];
+  if (customSettings?.icon) return customSettings.icon;
+  
+  const defaultMap: Record<string, string> = {
+    summary: 'pencil',
+    experience: 'briefcase',
+    education: 'education',
+    skills: 'code',
+    projects: 'award',
+    certifications: 'certificate',
+    achievements: 'award',
+    publications: 'books',
+    languages: 'globe',
+    interests: 'sparkles',
+    references: 'contact',
+    awards: 'award',
+    organizations: 'home',
+    courses: 'books',
+    volunteering: 'sparkles',
+    declaration: 'certificate',
+    signature: 'pencil',
+    patents: 'certificate',
+    hobbies: 'bicycle',
+    'custom-section': 'folder'
+  };
+  
+  if (sectionId.startsWith('custom-')) return 'folder';
+  return defaultMap[sectionId] || 'folder';
+};
+
+const isSectionIconShown = (sectionId: string, activeResume: any) => {
+  const customSettings = activeResume.sectionSettings?.[sectionId];
+  if (customSettings && customSettings.showIcon !== undefined) {
+    return customSettings.showIcon;
+  }
+  return true; // default to shown
+};
+
+const parseCustomContent = (content: string) => {
+  if (content && content.trim().startsWith('[')) {
+    try {
+      return JSON.parse(content);
+    } catch (e) {
+      return [];
+    }
+  }
+  return [];
+};
 
 interface PreviewProps {
   activeResume: ResumeVersion;
@@ -79,9 +156,16 @@ export const Preview: React.FC<PreviewProps> = ({
   };
 
   // Section Heading Builder
-  const renderHeading = (text: string) => {
+  const renderHeading = (text: string, sectionId?: string) => {
     const hStyle = activeResume.headingStyle || config.headingStyle || 'simple';
-    const capText = activeResume.headingCapitalization === 'uppercase' ? text.toUpperCase() : text;
+    let displayText = text;
+    if (sectionId) {
+      const customTitle = activeResume.sectionSettings?.[sectionId]?.title;
+      if (customTitle) {
+        displayText = customTitle;
+      }
+    }
+    const capText = activeResume.headingCapitalization === 'uppercase' ? displayText.toUpperCase() : displayText;
     const hSize = {
       S: 'text-[10px]',
       M: 'text-[11.5px]',
@@ -98,22 +182,41 @@ export const Preview: React.FC<PreviewProps> = ({
       letterSpacing: '0.05em',
     };
 
+    let iconNode = null;
+    if (sectionId) {
+      const showIcon = isSectionIconShown(sectionId, activeResume);
+      const iconName = getSectionIconName(sectionId, activeResume);
+      if (showIcon && iconName) {
+        const IconComponent = iconMap[iconName];
+        if (IconComponent) {
+          iconNode = <IconComponent className="w-3.5 h-3.5 inline-block mr-1.5 shrink-0 align-text-bottom" style={{ color: headingColor }} />;
+        }
+      }
+    }
+
     if (hStyle === 'underline') {
       return (
         <div className="border-b pb-0.5 mb-2 text-left" style={{ borderColor: lineColor }}>
-          <span className={`${hSize} uppercase tracking-wider`} style={headingCSS}>{capText}</span>
+          <span className={`${hSize} uppercase tracking-wider inline-flex items-center`} style={headingCSS}>
+            {iconNode}
+            {capText}
+          </span>
         </div>
       );
     } else if (hStyle === 'left-block') {
       return (
         <div className="pl-2 border-l-4 mb-2 text-left" style={{ borderColor: lineColor }}>
-          <span className={`${hSize} uppercase tracking-wider`} style={headingCSS}>{capText}</span>
+          <span className={`${hSize} uppercase tracking-wider inline-flex items-center`} style={headingCSS}>
+            {iconNode}
+            {capText}
+          </span>
         </div>
       );
     } else if (hStyle === 'background-fill') {
       return (
         <div className="px-2.5 py-1 mb-2 rounded text-left" style={{ backgroundColor: lineColor }}>
-          <span className={`${hSize} uppercase tracking-wider font-extrabold`} style={{ ...headingCSS, color: '#ffffff' }}>
+          <span className={`${hSize} uppercase tracking-wider font-extrabold inline-flex items-center`} style={{ ...headingCSS, color: '#ffffff' }}>
+            {iconNode && React.cloneElement(iconNode as any, { style: { color: '#ffffff' } })}
             {capText}
           </span>
         </div>
@@ -121,26 +224,38 @@ export const Preview: React.FC<PreviewProps> = ({
     } else if (hStyle === 'wavy') {
       return (
         <div className="mb-2 text-left">
-          <span className={`${hSize} uppercase tracking-wider`} style={headingCSS}>{capText}</span>
+          <span className={`${hSize} uppercase tracking-wider inline-flex items-center`} style={headingCSS}>
+            {iconNode}
+            {capText}
+          </span>
           <div className="h-0.5 mt-0.5" style={{ borderBottom: `2px wavy ${lineColor}` }}></div>
         </div>
       );
     } else if (hStyle === 'double-line') {
       return (
         <div className="border-b-4 border-double pb-0.5 mb-2 text-left" style={{ borderColor: lineColor }}>
-          <span className={`${hSize} uppercase tracking-wider`} style={headingCSS}>{capText}</span>
+          <span className={`${hSize} uppercase tracking-wider inline-flex items-center`} style={headingCSS}>
+            {iconNode}
+            {capText}
+          </span>
         </div>
       );
     } else if (hStyle === 'none') {
       return (
         <div className="mb-1.5 text-left">
-          <span className={`${hSize} uppercase tracking-wider`} style={headingCSS}>{capText}</span>
+          <span className={`${hSize} uppercase tracking-wider inline-flex items-center`} style={headingCSS}>
+            {iconNode}
+            {capText}
+          </span>
         </div>
       );
     } else {
       return (
         <div className="mb-1.5 text-left border-b border-zinc-150 pb-0.5">
-          <span className={`${hSize} uppercase tracking-wider`} style={headingCSS}>{capText}</span>
+          <span className={`${hSize} uppercase tracking-wider inline-flex items-center`} style={headingCSS}>
+            {iconNode}
+            {capText}
+          </span>
         </div>
       );
     }
@@ -150,12 +265,106 @@ export const Preview: React.FC<PreviewProps> = ({
   const renderSection = (sectionId: string) => {
     const spaceBottomStyle = { marginBottom: `${activeResume.entrySpacing || 8}px` };
 
+    if (sectionId.startsWith('custom-')) {
+      const found = (activeResume.customSections || []).find(cs => cs.id === sectionId);
+      if (!found || found.hidden) return null;
+      
+      const settings = activeResume.sectionSettings?.[sectionId];
+      const title = settings?.title || found.title || 'Custom Section';
+
+      if (found.isSkillType) {
+        const list = parseCustomContent(found.content || '');
+        if (list.length === 0) return null;
+        return (
+          <div key={sectionId} className="space-y-1 text-left" style={spaceBottomStyle}>
+            {renderHeading(title, sectionId)}
+            <div className="space-y-1 flex flex-col" style={{ gap: '2px' }}>
+              {list.map((item: any, idx: number) => (
+                <div key={item.id || idx} className="text-zinc-650 text-[11px] leading-relaxed text-justify" style={{ fontSize: fontSizeStyle, lineHeight: lineHeightStyle }}>
+                  <span className="font-bold text-zinc-800 mr-1.5">{item.title}:</span>
+                  <span>{item.details}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      const customType = settings?.customType || 'Normal';
+      if (customType === 'Normal') {
+        const entries = parseCustomContent(found.content || '');
+        const visibleEntries = entries.filter((e: any) => !e.hidden);
+        if (visibleEntries.length === 0) {
+          if (found.content && !found.content.trim().startsWith('[')) {
+            return (
+              <div key={sectionId} className="space-y-1 text-left" style={spaceBottomStyle}>
+                {renderHeading(title, sectionId)}
+                <p className="text-zinc-650 leading-relaxed text-justify text-[11px]" style={{ fontSize: fontSizeStyle, lineHeight: lineHeightStyle }}>
+                  {found.content}
+                </p>
+              </div>
+            );
+          }
+          return null;
+        }
+
+        return (
+          <div key={sectionId} className="space-y-1.5 text-left" style={spaceBottomStyle}>
+            {renderHeading(title, sectionId)}
+            <div className="space-y-3 flex flex-col" style={{ gap: `${activeResume.entrySpacing || 6}px` }}>
+              {visibleEntries.map((entry: any, entryIdx: number) => {
+                const leftParts = [entry.title, entry.subtitle].filter(Boolean);
+                const leftText = leftParts.join(', ');
+                const durationStr = [entry.startDate, entry.endDate].filter(Boolean).join(' – ');
+                const rightParts = [durationStr, entry.location].filter(Boolean).join(' | ');
+
+                return (
+                  <div key={entryIdx} className="space-y-0.5 text-left">
+                    <div className="flex justify-between items-baseline font-bold text-zinc-850 text-[11px]" style={{ fontSize: fontSizeStyle }}>
+                      <span>
+                        {entry.link ? (
+                          <a href={entry.link} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-650 font-bold" style={{ color: primaryHex }}>
+                            {leftText}
+                          </a>
+                        ) : leftText}
+                      </span>
+                      {rightParts && (
+                        <span className="text-[9.5px] text-zinc-500 font-normal font-mono">{rightParts}</span>
+                      )}
+                    </div>
+                    {entry.description && (
+                      <div 
+                        className="text-zinc-650 leading-relaxed text-justify text-[10.5px] rich-text-content"
+                        style={{ fontSize: `calc(${fontSizeStyle} - 0.5px)`, lineHeight: lineHeightStyle }}
+                        dangerouslySetInnerHTML={{ __html: entry.description }}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      } else {
+        return (
+          <div key={sectionId} className="space-y-1 text-left" style={spaceBottomStyle}>
+            {renderHeading(title, sectionId)}
+            <div 
+              className="text-zinc-650 leading-relaxed text-justify text-[11px] rich-text-content" 
+              style={{ fontSize: fontSizeStyle, lineHeight: lineHeightStyle }} 
+              dangerouslySetInnerHTML={{ __html: found.content || '' }}
+            />
+          </div>
+        );
+      }
+    }
+
     switch (sectionId) {
       case 'summary':
         if (!activeResume.summary) return null;
         return (
           <div key="summary" className="space-y-1 text-left" style={spaceBottomStyle}>
-            {renderHeading('Professional Summary')}
+            {renderHeading('Professional Summary', 'summary')}
             <p className="text-zinc-650 leading-relaxed text-justify text-[11px]" style={{ fontSize: fontSizeStyle, lineHeight: lineHeightStyle }}>
               {activeResume.summary}
             </p>
@@ -167,7 +376,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (lines.length === 0) return null;
         return (
           <div key="experience" className="space-y-1.5 text-left" style={spaceBottomStyle}>
-            {renderHeading('Work Experience')}
+            {renderHeading('Work Experience', 'experience')}
             <div className="space-y-3 flex flex-col" style={{ gap: `${activeResume.entrySpacing || 6}px` }}>
               {lines.map((line, idx) => {
                 const isHidden = line.startsWith('[HIDDEN]');
@@ -210,7 +419,6 @@ export const Preview: React.FC<PreviewProps> = ({
         }
         
         if (eduList.length === 0) {
-          // Fallback to legacy text parsing
           const parseLegacyEdu = (text: string) => {
             const lines = text.split('\n').filter(l => l.trim() !== '');
             return lines.map((line, idx) => {
@@ -250,7 +458,7 @@ export const Preview: React.FC<PreviewProps> = ({
 
         return (
           <div key="education" className="space-y-1.5 text-left" style={spaceBottomStyle}>
-            {renderHeading('Education')}
+            {renderHeading('Education', 'education')}
             <div className="space-y-3 flex flex-col" style={{ gap: `${activeResume.entrySpacing || 6}px` }}>
               {visibleEdu.map((edu, idx) => {
                 const leftParts = [edu.degree, edu.school].filter(Boolean);
@@ -296,7 +504,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (!activeResume.skills) return null;
         return (
           <div key="skills" className="space-y-1 text-left" style={spaceBottomStyle}>
-            {renderHeading('Technical Skills')}
+            {renderHeading('Technical Skills', 'skills')}
             <div className="flex flex-wrap gap-1.5 pt-0.5 text-left">
               {activeResume.skills.split(',').map((skill, idx) => (
                 <span
@@ -316,7 +524,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (projLines.length === 0) return null;
         return (
           <div key="projects" className="space-y-1.5 text-left" style={spaceBottomStyle}>
-            {renderHeading('Key Projects')}
+            {renderHeading('Key Projects', 'projects')}
             <div className="space-y-2 flex flex-col" style={{ gap: `${activeResume.entrySpacing || 6}px` }}>
               {projLines.map((line, idx) => {
                 if (line.startsWith('[HIDDEN]')) return null;
@@ -348,7 +556,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (visibleCerts.length === 0) return null;
         return (
           <div key="certifications" className="space-y-1 text-left" style={spaceBottomStyle}>
-            {renderHeading('Certifications')}
+            {renderHeading('Certifications', 'certifications')}
             <div className="space-y-1.5 text-left">
               {visibleCerts.map(cert => (
                 <div key={cert.id} className="text-[11px] flex justify-between items-baseline" style={{ fontSize: fontSizeStyle }}>
@@ -369,7 +577,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (visibleAchs.length === 0) return null;
         return (
           <div key="achievements" className="space-y-1 text-left" style={spaceBottomStyle}>
-            {renderHeading('Achievements & Honors')}
+            {renderHeading('Achievements & Honors', 'achievements')}
             <div className="space-y-1.5">
               {visibleAchs.map(ach => (
                 <div key={ach.id} className="text-[11px]" style={{ fontSize: fontSizeStyle }}>
@@ -387,7 +595,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (visibleLangs.length === 0) return null;
         return (
           <div key="languages" className="space-y-1 text-left" style={spaceBottomStyle}>
-            {renderHeading('Languages')}
+            {renderHeading('Languages', 'languages')}
             <div className="flex flex-wrap gap-1.5 pt-0.5">
               {visibleLangs.map(lang => (
                 <span 
@@ -408,7 +616,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (visibleRefs.length === 0) return null;
         return (
           <div key="references" className="space-y-1.5 text-left" style={spaceBottomStyle}>
-            {renderHeading('References')}
+            {renderHeading('References', 'references')}
             <div className="grid grid-cols-2 gap-3">
               {visibleRefs.map(ref => (
                 <div key={ref.id} className="text-[10px] space-y-0.5 border-l-2 border-zinc-200 pl-2 leading-relaxed" style={{ fontSize: fontSizeStyle }}>
@@ -428,14 +636,14 @@ export const Preview: React.FC<PreviewProps> = ({
         if (visibleAwards.length === 0) return null;
         return (
           <div key="awards" className="space-y-1 text-left" style={spaceBottomStyle}>
-            {renderHeading('Awards & Recognitions')}
+            {renderHeading('Awards & Recognitions', 'awards')}
             <div className="space-y-1.5">
               {visibleAwards.map(aw => (
                 <div key={aw.id} className="text-[11px] flex justify-between items-baseline" style={{ fontSize: fontSizeStyle }}>
                   <div>
                     <span className="font-bold text-zinc-800">{aw.title}</span>
                     <span className="text-zinc-500 text-[10px] ml-1.5">from {aw.issuer}</span>
-                    {aw.description && <p className="text-zinc-500 text-[10px] mt-0.5">{aw.description}</p>}
+                    {aw.description && <p className="text-zinc-550 text-[10px] mt-0.5">{aw.description}</p>}
                   </div>
                   <span className="text-[9.5px] text-zinc-500 font-mono">{aw.date}</span>
                 </div>
@@ -450,7 +658,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (visiblePubs.length === 0) return null;
         return (
           <div key="publications" className="space-y-1.5 text-left" style={spaceBottomStyle}>
-            {renderHeading('Publications & Articles')}
+            {renderHeading('Publications & Articles', 'publications')}
             <div className="space-y-2">
               {visiblePubs.map(pub => (
                 <div key={pub.id} className="text-[11px]" style={{ fontSize: fontSizeStyle }}>
@@ -471,7 +679,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (visibleOrgs.length === 0) return null;
         return (
           <div key="organizations" className="space-y-1.5 text-left" style={spaceBottomStyle}>
-            {renderHeading('Organizations & Memberships')}
+            {renderHeading('Organizations & Memberships', 'organizations')}
             <div className="space-y-2">
               {visibleOrgs.map(org => (
                 <div key={org.id} className="text-[11px]" style={{ fontSize: fontSizeStyle }}>
@@ -493,7 +701,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (visibleInterests.length === 0) return null;
         return (
           <div key="interests" className="space-y-1 text-left" style={spaceBottomStyle}>
-            {renderHeading('Interests')}
+            {renderHeading('Interests', 'interests')}
             <div className="flex flex-wrap gap-1.5 pt-0.5">
               {visibleInterests.map(int => (
                 <span 
@@ -514,7 +722,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (visibleCourses.length === 0) return null;
         return (
           <div key="courses" className="space-y-1 text-left" style={spaceBottomStyle}>
-            {renderHeading('Courses & Training')}
+            {renderHeading('Courses & Training', 'courses')}
             <div className="space-y-1.5">
               {visibleCourses.map(crs => (
                 <div key={crs.id} className="text-[11px] flex justify-between items-baseline" style={{ fontSize: fontSizeStyle }}>
@@ -535,7 +743,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (visibleVolunteers.length === 0) return null;
         return (
           <div key="volunteering" className="space-y-1.5 text-left" style={spaceBottomStyle}>
-            {renderHeading('Volunteering Experience')}
+            {renderHeading('Volunteering Experience', 'volunteering')}
             <div className="space-y-2">
               {visibleVolunteers.map(vol => (
                 <div key={vol.id} className="text-[11px]" style={{ fontSize: fontSizeStyle }}>
@@ -555,7 +763,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (!activeResume.declarationText) return null;
         return (
           <div key="declaration" className="space-y-1 text-left" style={spaceBottomStyle}>
-            {renderHeading('Declaration')}
+            {renderHeading('Declaration', 'declaration')}
             <p className="text-zinc-600 leading-relaxed text-justify text-[10px] italic" style={{ fontSize: fontSizeStyle, lineHeight: lineHeightStyle }}>
               {activeResume.declarationText}
             </p>
@@ -579,7 +787,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (visiblePatents.length === 0) return null;
         return (
           <div key="patents" className="space-y-1 text-left" style={spaceBottomStyle}>
-            {renderHeading('Patents')}
+            {renderHeading('Patents', 'patents')}
             <div className="space-y-1.5">
               {visiblePatents.map(pat => (
                 <div key={pat.id} className="text-[11px]" style={{ fontSize: fontSizeStyle }}>
@@ -601,7 +809,7 @@ export const Preview: React.FC<PreviewProps> = ({
         if (visibleHobbies.length === 0) return null;
         return (
           <div key="hobbies" className="space-y-1 text-left" style={spaceBottomStyle}>
-            {renderHeading('Hobbies')}
+            {renderHeading('Hobbies', 'hobbies')}
             <div className="flex flex-wrap gap-1.5 pt-0.5">
               {visibleHobbies.map(hob => (
                 <span 
@@ -624,7 +832,7 @@ export const Preview: React.FC<PreviewProps> = ({
           <div key="custom-section" className="space-y-2 text-left" style={spaceBottomStyle}>
             {visibleCustoms.map(cust => (
               <div key={cust.id} className="space-y-1">
-                {renderHeading(cust.title || 'Custom Section')}
+                {renderHeading(cust.title || 'Custom Section', cust.id)}
                 <p className="text-zinc-650 leading-relaxed text-justify text-[11px] whitespace-pre-line" style={{ fontSize: fontSizeStyle, lineHeight: lineHeightStyle }}>
                   {cust.content}
                 </p>

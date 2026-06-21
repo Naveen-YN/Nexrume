@@ -6,10 +6,115 @@ import {
   Eye, ChevronUp, ChevronDown, Upload, Image, GripVertical, 
   Copy, Edit3, Check, Calendar, Shield, Clock, Info, Heart, 
   Bookmark, CheckCircle, Trophy, Users, Landmark, PenTool, 
-  Compass, Library, ExternalLink, RefreshCw
+  Compass, Library, ExternalLink, RefreshCw,
+  FileText, Music, Home as HomeIcon, Folder, Newspaper, Share2, 
+  Brain, Puzzle, Pencil, MousePointer, Atom, Luggage, Bike, Sparkles
 } from 'lucide-react';
 import { AddContentModal } from './add-content-modal';
 import { RichTextEditor } from './rich-text-editor';
+
+const DEFAULT_ICONS = [
+  { name: 'award', label: 'Award', icon: Award },
+  { name: 'certificate', label: 'Certificate', icon: FileText },
+  { name: 'books', label: 'Books', icon: BookOpen },
+  { name: 'education', label: 'Education', icon: GraduationCap },
+  { name: 'briefcase', label: 'Work', icon: Briefcase },
+  { name: 'code', label: 'Skills', icon: Code },
+  { name: 'contact', label: 'Contact', icon: User },
+  { name: 'folder', label: 'Custom', icon: Folder }
+];
+
+const MORE_ICONS = [
+  { name: 'home', label: 'Home', icon: HomeIcon },
+  { name: 'globe', label: 'Globe', icon: Globe },
+  { name: 'music', label: 'Music', icon: Music },
+  { name: 'newspaper', label: 'News', icon: Newspaper },
+  { name: 'network', label: 'Network', icon: Share2 },
+  { name: 'brain', label: 'Brain', icon: Brain },
+  { name: 'puzzle', label: 'Puzzle', icon: Puzzle },
+  { name: 'pencil', label: 'Pencil', icon: Pencil },
+  { name: 'pointer', label: 'Pointer', icon: MousePointer },
+  { name: 'sync', label: 'Sync', icon: RefreshCw },
+  { name: 'atom', label: 'Atom', icon: Atom },
+  { name: 'suitcase', label: 'Suitcase', icon: Luggage },
+  { name: 'bicycle', label: 'Bike', icon: Bike },
+  { name: 'sparkles', label: 'Sparkles', icon: Sparkles }
+];
+
+const allIconsMap: Record<string, React.ComponentType<any>> = {
+  award: Award,
+  certificate: FileText,
+  books: BookOpen,
+  education: GraduationCap,
+  music: Music,
+  globe: Globe,
+  home: HomeIcon,
+  briefcase: Briefcase,
+  contact: User,
+  folder: Folder,
+  newspaper: Newspaper,
+  network: Share2,
+  brain: Brain,
+  puzzle: Puzzle,
+  pencil: Pencil,
+  pointer: MousePointer,
+  sync: RefreshCw,
+  atom: Atom,
+  suitcase: Luggage,
+  bicycle: Bike,
+  code: Code,
+  sparkles: Sparkles
+};
+
+const getSectionIconName = (sectionId: string, activeResume: any) => {
+  const customSettings = activeResume.sectionSettings?.[sectionId];
+  if (customSettings?.icon) return customSettings.icon;
+  
+  const defaultMap: Record<string, string> = {
+    summary: 'pencil',
+    experience: 'briefcase',
+    education: 'education',
+    skills: 'code',
+    projects: 'award',
+    certifications: 'certificate',
+    achievements: 'award',
+    publications: 'books',
+    languages: 'globe',
+    interests: 'sparkles',
+    references: 'contact',
+    awards: 'award',
+    organizations: 'home',
+    courses: 'books',
+    volunteering: 'sparkles',
+    declaration: 'certificate',
+    signature: 'pencil',
+    patents: 'certificate',
+    hobbies: 'bicycle',
+    'custom-section': 'folder'
+  };
+  
+  if (sectionId.startsWith('custom-')) return 'folder';
+  return defaultMap[sectionId] || 'folder';
+};
+
+const isSectionIconShown = (sectionId: string, activeResume: any) => {
+  const customSettings = activeResume.sectionSettings?.[sectionId];
+  if (customSettings && customSettings.showIcon !== undefined) {
+    return customSettings.showIcon;
+  }
+  return true; // default to shown
+};
+
+const parseCustomContent = (content: string) => {
+  if (content && content.trim().startsWith('[')) {
+    try {
+      return JSON.parse(content);
+    } catch (e) {
+      return [];
+    }
+  }
+  return [];
+};
 
 interface EditorContentProps {
   activeResume: ResumeVersion;
@@ -36,6 +141,10 @@ export const EditorContent: React.FC<EditorContentProps> = ({
   // Drag & Drop items
   const [draggedSectionIndex, setDraggedSectionIndex] = useState<number | null>(null);
   const [draggedEntryIndex, setDraggedEntryIndex] = useState<number | null>(null);
+  
+  // Custom headers & editing states
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [openIconDropdownId, setOpenIconDropdownId] = useState<string | null>(null);
 
   // Profile photo drag & drop states
   const [isPhotoDragging, setIsPhotoDragging] = useState(false);
@@ -208,7 +317,22 @@ export const EditorContent: React.FC<EditorContentProps> = ({
     });
   };
 
+  const updateSectionSetting = (sectionId: string, updates: any) => {
+    const sectionSettings = activeResume.sectionSettings || {};
+    const current = sectionSettings[sectionId] || {};
+    onUpdateResume({
+      sectionSettings: {
+        ...sectionSettings,
+        [sectionId]: {
+          ...current,
+          ...updates
+        }
+      }
+    });
+  };
+
   const renameSectionInline = (sectionId: string, newName: string) => {
+    updateSectionSetting(sectionId, { title: newName });
     // If custom section, update its title in customSections array
     if (sectionId.startsWith('custom-')) {
       onUpdateResume({
@@ -220,6 +344,10 @@ export const EditorContent: React.FC<EditorContentProps> = ({
   };
 
   const getSectionTitle = (id: string) => {
+    // Check sectionSettings first
+    const customTitle = activeResume.sectionSettings?.[id]?.title;
+    if (customTitle) return customTitle;
+
     if (id.startsWith('custom-')) {
       const found = (activeResume.customSections || []).find(cs => cs.id === id);
       return found?.title || 'Custom Section';
@@ -713,69 +841,251 @@ export const EditorContent: React.FC<EditorContentProps> = ({
               onDrop={() => handleSectionDrop(secIdx)}
             >
               {/* Section Header */}
-              <div className="flex justify-between items-center bg-zinc-900 border-b border-zinc-850 p-4 select-none">
-                <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                  <div className="cursor-grab active:cursor-grabbing text-zinc-650 hover:text-zinc-400 shrink-0">
-                    <GripVertical className="w-4 h-4" />
+              {(() => {
+                const isEditing = editingSectionId === sectionId;
+                const sectionIconName = getSectionIconName(sectionId, activeResume);
+                const showIcon = isSectionIconShown(sectionId, activeResume);
+                const SectionIconComponent = showIcon ? (allIconsMap[sectionIconName] || Folder) : EyeOff;
+                const isDropdownOpen = openIconDropdownId === sectionId;
+
+                return (
+                  <div className="bg-zinc-900 border-b border-zinc-850 p-4">
+                    {isEditing ? (
+                      <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between w-full">
+                        {/* Left: Icon Selector and Title Input */}
+                        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
+                          {/* Icon Dropdown Selector */}
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setOpenIconDropdownId(isDropdownOpen ? null : sectionId)}
+                              className="bg-zinc-950 border border-zinc-800 hover:border-zinc-700 text-white rounded-lg px-3 py-2 flex items-center gap-2 text-xs font-black uppercase tracking-wider shrink-0 transition"
+                            >
+                              <SectionIconComponent className="w-4 h-4 text-indigo-400" />
+                              <span>{showIcon ? sectionIconName : 'No Icon'}</span>
+                              <ChevronDown className="w-3 h-3 text-zinc-550" />
+                            </button>
+
+                            {isDropdownOpen && (
+                              <div className="absolute left-0 mt-2 w-72 bg-zinc-950 border border-zinc-800 rounded-xl shadow-xl z-50 p-3 space-y-3.5 max-h-[300px] overflow-y-auto">
+                                {/* Toggle Switch to show/hide icon */}
+                                <div className="flex items-center justify-between pb-2 border-b border-zinc-900">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Show Section Icon</span>
+                                  <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={showIcon}
+                                      onChange={e => updateSectionSetting(sectionId, { showIcon: e.target.checked })}
+                                      className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-zinc-850 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-350 after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600 peer-checked:after:bg-white"></div>
+                                  </label>
+                                </div>
+
+                                {showIcon && (
+                                  <div className="space-y-3">
+                                    <div>
+                                      <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500 block mb-1.5">Recommended</span>
+                                      <div className="grid grid-cols-4 gap-1.5">
+                                        {DEFAULT_ICONS.map(ic => {
+                                          const IconComp = ic.icon;
+                                          const isSelected = sectionIconName === ic.name;
+                                          return (
+                                            <button
+                                              key={ic.name}
+                                              type="button"
+                                              onClick={() => {
+                                                updateSectionSetting(sectionId, { icon: ic.name });
+                                                setOpenIconDropdownId(null);
+                                              }}
+                                              className={`p-2 rounded-lg border flex flex-col items-center gap-1 transition ${
+                                                isSelected 
+                                                  ? 'bg-indigo-650/15 border-indigo-500/50 text-indigo-400' 
+                                                  : 'bg-zinc-900 border-zinc-850 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                                              }`}
+                                              title={ic.label}
+                                            >
+                                              <IconComp className="w-4 h-4" />
+                                              <span className="text-[7.5px] font-bold truncate max-w-full">{ic.label}</span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500 block mb-1.5">Other Icons</span>
+                                      <div className="grid grid-cols-4 gap-1.5">
+                                        {MORE_ICONS.map(ic => {
+                                          const IconComp = ic.icon;
+                                          const isSelected = sectionIconName === ic.name;
+                                          return (
+                                            <button
+                                              key={ic.name}
+                                              type="button"
+                                              onClick={() => {
+                                                updateSectionSetting(sectionId, { icon: ic.name });
+                                                setOpenIconDropdownId(null);
+                                              }}
+                                              className={`p-2 rounded-lg border flex flex-col items-center gap-1 transition ${
+                                                isSelected 
+                                                  ? 'bg-indigo-650/15 border-indigo-500/50 text-indigo-400' 
+                                                  : 'bg-zinc-900 border-zinc-850 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                                              }`}
+                                              title={ic.label}
+                                            >
+                                              <IconComp className="w-4 h-4" />
+                                              <span className="text-[7.5px] font-bold truncate max-w-full">{ic.label}</span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Heading Text Input */}
+                          <input
+                            type="text"
+                            value={title}
+                            onChange={e => renameSectionInline(sectionId, e.target.value)}
+                            placeholder="Heading Title"
+                            className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs font-black text-white uppercase tracking-wider outline-none focus:border-indigo-500 flex-1 min-w-[120px]"
+                          />
+
+                          {/* For Custom Sections: Type Selection (Normal / Skill) */}
+                          {sectionId.startsWith('custom-') && (
+                            <div className="flex bg-zinc-950 p-0.5 rounded-lg border border-zinc-800 text-[10px] font-black uppercase tracking-wider shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const customs = activeResume.customSections || [];
+                                  const updatedCustoms = customs.map(cs => 
+                                    cs.id === sectionId ? { ...cs, isSkillType: false } : cs
+                                  );
+                                  onUpdateResume({ customSections: updatedCustoms });
+                                }}
+                                className={`px-2 py-1.5 rounded transition ${
+                                  !activeResume.customSections?.find(cs => cs.id === sectionId)?.isSkillType
+                                    ? 'bg-indigo-650 text-white shadow'
+                                    : 'text-zinc-550 hover:text-zinc-350'
+                                }`}
+                              >
+                                Normal
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const customs = activeResume.customSections || [];
+                                  const updatedCustoms = customs.map(cs => 
+                                    cs.id === sectionId ? { ...cs, isSkillType: true } : cs
+                                  );
+                                  onUpdateResume({ customSections: updatedCustoms });
+                                }}
+                                className={`px-2 py-1.5 rounded transition ${
+                                  !!activeResume.customSections?.find(cs => cs.id === sectionId)?.isSkillType
+                                    ? 'bg-indigo-650 text-white shadow'
+                                    : 'text-zinc-550 hover:text-zinc-350'
+                                }`}
+                              >
+                                Skill
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Right: Done Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingSectionId(null);
+                            setOpenIconDropdownId(null);
+                          }}
+                          className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-lg px-4 py-2 flex items-center justify-center gap-1.5 text-xs font-black uppercase tracking-wider shrink-0 transition active:scale-[0.98] shadow-md shadow-pink-500/10 cursor-pointer"
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>Done</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center select-none w-full">
+                        {/* Normal Header: Title and edit buttons */}
+                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                          <div className="cursor-grab active:cursor-grabbing text-zinc-650 hover:text-zinc-400 shrink-0">
+                            <GripVertical className="w-4 h-4" />
+                          </div>
+
+                          {/* Icon Indicator */}
+                          {showIcon && <SectionIconComponent className="w-4 h-4 text-indigo-400 shrink-0" />}
+                          
+                          {/* Section Title Display */}
+                          <span className="text-xs font-black text-white uppercase tracking-wider truncate">
+                            {title}
+                          </span>
+
+                          {/* Edit Heading pill button */}
+                          <button
+                            type="button"
+                            onClick={() => setEditingSectionId(sectionId)}
+                            className="bg-zinc-955 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition cursor-pointer"
+                          >
+                            <Edit3 className="w-3 h-3 text-indigo-400" />
+                            <span>Edit Heading</span>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-3.5 shrink-0">
+                          {/* Section Controls */}
+                          <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-850 rounded px-1.5 py-0.5">
+                            <button
+                              onClick={() => moveSection(secIdx, 'up')}
+                              disabled={secIdx === 0}
+                              className="text-zinc-555 hover:text-zinc-300 p-0.5 disabled:opacity-20 cursor-pointer"
+                              title="Move Up"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => moveSection(secIdx, 'down')}
+                              disabled={secIdx === (activeResume.sectionOrder || []).length - 1}
+                              className="text-zinc-555 hover:text-zinc-300 p-0.5 disabled:opacity-20 cursor-pointer"
+                              title="Move Down"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <button
+                            onClick={() => duplicateSection(sectionId)}
+                            className="text-zinc-500 hover:text-zinc-300 p-1 cursor-pointer"
+                            title="Duplicate Section"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={() => deleteSection(sectionId)}
+                            className="text-rose-500 hover:text-rose-400 p-1 cursor-pointer"
+                            title="Delete Section"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={() => toggleSectionCollapse(sectionId)}
+                            className="text-zinc-500 hover:text-zinc-350 p-1 cursor-pointer"
+                          >
+                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  
-                  {/* Inline editable title */}
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={e => renameSectionInline(sectionId, e.target.value)}
-                    disabled={!sectionId.startsWith('custom-')}
-                    className={`bg-transparent text-xs font-black text-white uppercase tracking-wider outline-none border-b border-transparent truncate max-w-sm focus:border-indigo-500 py-0.5 ${
-                      sectionId.startsWith('custom-') ? 'hover:border-zinc-800' : 'cursor-default'
-                    }`}
-                  />
-                </div>
-
-                <div className="flex items-center gap-3.5 shrink-0">
-                  {/* Section Controls */}
-                  <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-850 rounded px-1.5 py-0.5">
-                    <button
-                      onClick={() => moveSection(secIdx, 'up')}
-                      disabled={secIdx === 0}
-                      className="text-zinc-550 hover:text-zinc-300 p-0.5 disabled:opacity-20 cursor-pointer"
-                      title="Move Up"
-                    >
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => moveSection(secIdx, 'down')}
-                      disabled={secIdx === (activeResume.sectionOrder || []).length - 1}
-                      className="text-zinc-550 hover:text-zinc-300 p-0.5 disabled:opacity-20 cursor-pointer"
-                      title="Move Down"
-                    >
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => duplicateSection(sectionId)}
-                    className="text-zinc-500 hover:text-zinc-300 p-1 cursor-pointer"
-                    title="Duplicate Section"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button
-                    onClick={() => deleteSection(sectionId)}
-                    className="text-rose-500 hover:text-rose-400 p-1 cursor-pointer"
-                    title="Delete Section"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button
-                    onClick={() => toggleSectionCollapse(sectionId)}
-                    className="text-zinc-500 hover:text-zinc-350 p-1 cursor-pointer"
-                  >
-                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Section Body */}
               {isExpanded && (
@@ -2111,23 +2421,161 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                     <div className="space-y-3 text-xs">
                       {((activeResume.customSections) || [])
                         .filter(cs => cs.id === sectionId)
-                        .map(cs => (
-                          <div key={cs.id} className="space-y-2">
-                            <textarea
-                              placeholder="Write your custom section paragraphs here. You can use normal markdown format..."
-                              value={cs.content || ''}
-                              onChange={e => {
-                                onUpdateResume({
-                                  customSections: (activeResume.customSections || []).map(item => 
-                                    item.id === cs.id ? { ...item, content: e.target.value } : item
-                                  )
-                                });
-                              }}
-                              rows={5}
-                              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px] leading-relaxed font-mono"
-                            />
-                          </div>
-                        ))}
+                        .map(cs => {
+                          const isSkillType = cs.isSkillType;
+                          return (
+                            <div key={cs.id} className="space-y-2">
+                              {isSkillType ? (
+                                (() => {
+                                  const list = parseCustomContent(cs.content);
+                                  return (
+                                    <div className="space-y-3">
+                                      <div className="flex justify-between items-center text-xs">
+                                        <span className="text-zinc-500 font-bold">Skill Groups / Details</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const newList = [...list, { id: `item-${Date.now()}`, title: 'Group Title', details: 'Item details or comma-separated list' }];
+                                            onUpdateResume({
+                                              customSections: (activeResume.customSections || []).map(item => 
+                                                item.id === cs.id ? { ...item, content: JSON.stringify(newList) } : item
+                                              )
+                                            });
+                                          }}
+                                          className="bg-indigo-650/80 hover:bg-indigo-650 text-[10px] font-black uppercase text-white px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition active:scale-[0.98]"
+                                        >
+                                          <Plus className="w-3 h-3" />
+                                          <span>Add Item Group</span>
+                                        </button>
+                                      </div>
+
+                                      {list.length === 0 ? (
+                                        <div className="text-center py-5 border border-dashed border-zinc-850 rounded-xl text-zinc-650 text-[10px]">
+                                          No items added yet. Click "Add Item Group" to start.
+                                        </div>
+                                      ) : (
+                                        <div className="space-y-2.5 max-h-[250px] overflow-y-auto pr-1 scrollbar-thin">
+                                          {list.map((item: any, idx: number) => (
+                                            <div key={item.id || idx} className="bg-zinc-900 border border-zinc-850 rounded-xl p-3 flex flex-col gap-2 relative">
+                                              <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-wider">Group #{idx + 1}</span>
+                                                <div className="flex items-center gap-2">
+                                                  <button
+                                                    type="button"
+                                                    disabled={idx === 0}
+                                                    onClick={() => {
+                                                      const newList = [...list];
+                                                      const temp = newList[idx];
+                                                      newList[idx] = newList[idx - 1];
+                                                      newList[idx - 1] = temp;
+                                                      onUpdateResume({
+                                                        customSections: (activeResume.customSections || []).map(csItem => 
+                                                          csItem.id === cs.id ? { ...csItem, content: JSON.stringify(newList) } : csItem
+                                                        )
+                                                      });
+                                                    }}
+                                                    className="text-zinc-550 hover:text-zinc-350 disabled:opacity-20"
+                                                  >
+                                                    <ChevronUp className="w-3.5 h-3.5" />
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    disabled={idx === list.length - 1}
+                                                    onClick={() => {
+                                                      const newList = [...list];
+                                                      const temp = newList[idx];
+                                                      newList[idx] = newList[idx + 1];
+                                                      newList[idx + 1] = temp;
+                                                      onUpdateResume({
+                                                        customSections: (activeResume.customSections || []).map(csItem => 
+                                                          csItem.id === cs.id ? { ...csItem, content: JSON.stringify(newList) } : csItem
+                                                        )
+                                                      });
+                                                    }}
+                                                    className="text-zinc-550 hover:text-zinc-350 disabled:opacity-20"
+                                                  >
+                                                    <ChevronDown className="w-3.5 h-3.5" />
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      const newList = list.filter((_: any, i: number) => i !== idx);
+                                                      onUpdateResume({
+                                                        customSections: (activeResume.customSections || []).map(csItem => 
+                                                          csItem.id === cs.id ? { ...csItem, content: JSON.stringify(newList) } : csItem
+                                                        )
+                                                      });
+                                                    }}
+                                                    className="text-rose-500 hover:text-rose-455"
+                                                  >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                  </button>
+                                                </div>
+                                              </div>
+
+                                              <div className="grid grid-cols-1 gap-2.5">
+                                                <div className="space-y-1">
+                                                  <span className="text-zinc-555 font-black uppercase text-[8.5px]">Title / Label</span>
+                                                  <input
+                                                    type="text"
+                                                    placeholder="e.g. Languages"
+                                                    value={item.title || ''}
+                                                    onChange={e => {
+                                                      const newList = [...list];
+                                                      newList[idx] = { ...newList[idx], title: e.target.value };
+                                                      onUpdateResume({
+                                                        customSections: (activeResume.customSections || []).map(csItem => 
+                                                          csItem.id === cs.id ? { ...csItem, content: JSON.stringify(newList) } : csItem
+                                                        )
+                                                      });
+                                                    }}
+                                                    className="w-full bg-zinc-955 border border-zinc-800 rounded p-1.5 text-zinc-300 text-[11px]"
+                                                  />
+                                                </div>
+                                                <div className="space-y-1">
+                                                  <span className="text-zinc-555 font-black uppercase text-[8.5px]">Description / Details</span>
+                                                  <input
+                                                    type="text"
+                                                    placeholder="e.g. JavaScript, Python, Go"
+                                                    value={item.details || ''}
+                                                    onChange={e => {
+                                                      const newList = [...list];
+                                                      newList[idx] = { ...newList[idx], details: e.target.value };
+                                                      onUpdateResume({
+                                                        customSections: (activeResume.customSections || []).map(csItem => 
+                                                          csItem.id === cs.id ? { ...csItem, content: JSON.stringify(newList) } : csItem
+                                                        )
+                                                      });
+                                                    }}
+                                                    className="w-full bg-zinc-955 border border-zinc-800 rounded p-1.5 text-zinc-300 text-[11px]"
+                                                  />
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()
+                              ) : (
+                                <textarea
+                                  placeholder="Write your custom section paragraphs here. You can use normal markdown format..."
+                                  value={cs.content || ''}
+                                  onChange={e => {
+                                    onUpdateResume({
+                                      customSections: (activeResume.customSections || []).map(item => 
+                                        item.id === cs.id ? { ...item, content: e.target.value } : item
+                                      )
+                                    });
+                                  }}
+                                  rows={5}
+                                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px] leading-relaxed font-mono"
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
                     </div>
                   )}
                 </div>
