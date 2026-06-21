@@ -114,6 +114,17 @@ export async function POST(request: Request) {
     // Enforce CSS print media rules
     await page.emulateMediaType('print');
 
+    // Generate filename: FirstName_LastName_Resume.pdf
+    const firstName = (userProfile.name || 'Resume').split(' ')[0] || 'Resume';
+    const lastName = (userProfile.name || '').split(' ').slice(1).join('_') || '';
+    const safeLastName = lastName ? `_${lastName}` : '';
+    const downloadName = `${firstName}${safeLastName}_Resume.pdf`;
+
+    // Force document title to match the filename/resume name so the PDF properties metadata gets updated
+    await page.evaluate((title) => {
+      document.title = title;
+    }, downloadName);
+
     // Print A4 or Letter formats with zero page margins (margin handled by resume padding itself)
     const pdfBuffer = await page.pdf({
       format: activeResume.pageFormat === 'Letter' ? 'letter' : 'a4',
@@ -129,12 +140,6 @@ export async function POST(request: Request) {
 
     await browser.close();
     browser = null;
-
-    // Generate filename: FirstName_LastName_Resume.pdf
-    const firstName = (userProfile.name || 'Resume').split(' ')[0] || 'Resume';
-    const lastName = (userProfile.name || '').split(' ').slice(1).join('_') || '';
-    const safeLastName = lastName ? `_${lastName}` : '';
-    const downloadName = `${firstName}${safeLastName}_Resume.pdf`;
 
     console.log(`[API PDF] Successfully generated PDF: ${downloadName}. Buffer size: ${pdfBuffer.length} bytes.`);
 

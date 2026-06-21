@@ -597,9 +597,7 @@ export const EditorCustomize: React.FC<EditorCustomizeProps> = ({
             </label>
           </div>
         </div>
-      )}
-
-      {/* SUB-TAB 8: LINKS */}
+      )}      {/* SUB-TAB 8: LINKS */}
       {activeSubTab === 'links' && (
         <div className="bg-zinc-955 border border-zinc-850 p-4 rounded-xl space-y-4 animate-fade-in">
           <span className="text-[10px] font-bold text-zinc-455 block uppercase tracking-wider flex items-center gap-1.5">
@@ -627,6 +625,63 @@ export const EditorCustomize: React.FC<EditorCustomizeProps> = ({
               />
               <span>Highlight Links in Blue color</span>
             </label>
+
+            <label className="flex items-center gap-2 cursor-pointer text-zinc-450 select-none">
+              <input 
+                type="checkbox" 
+                checked={activeResume.linkUnderline !== false} 
+                onChange={e => onUpdateResume({ linkUnderline: e.target.checked })} 
+                className="rounded accent-indigo-650"
+              />
+              <span>Underline Links</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer text-zinc-450 select-none">
+              <input 
+                type="checkbox" 
+                checked={!!activeResume.linkItalic} 
+                onChange={e => onUpdateResume({ linkItalic: e.target.checked })} 
+                className="rounded accent-indigo-650"
+              />
+              <span>Italicize Links</span>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2.5 border-t border-zinc-850">
+            <div>
+              <label className="block text-[9.5px] font-bold text-zinc-400 uppercase mb-1.5">Custom Link Color</label>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="color" 
+                  value={activeResume.linkColor || '#2563eb'} 
+                  onChange={e => onUpdateResume({ linkColor: e.target.value, linkBlueColor: false })} 
+                  className="w-8 h-8 rounded border border-zinc-800 bg-transparent cursor-pointer shrink-0"
+                />
+                <input 
+                  type="text" 
+                  value={activeResume.linkColor || ''} 
+                  onChange={e => onUpdateResume({ linkColor: e.target.value, linkBlueColor: false })} 
+                  placeholder="#2563eb"
+                  className="flex-1 bg-zinc-950 border border-zinc-850 rounded-lg p-1.5 text-zinc-300 outline-none focus:border-indigo-500 text-xs font-mono"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[9.5px] font-bold text-zinc-400 uppercase mb-1.5">Link Font Weight</label>
+              <select 
+                value={activeResume.linkFontWeight || 'normal'} 
+                onChange={e => onUpdateResume({ linkFontWeight: e.target.value })} 
+                className="w-full bg-zinc-950 border border-zinc-850 rounded-lg p-2 text-zinc-300 text-xs outline-none focus:border-indigo-500"
+              >
+                <option value="300">Light (300)</option>
+                <option value="normal">Normal</option>
+                <option value="500">Medium (500)</option>
+                <option value="600">Semibold (600)</option>
+                <option value="bold">Bold</option>
+                <option value="800">Extra Bold (800)</option>
+              </select>
+            </div>
           </div>
         </div>
       )}

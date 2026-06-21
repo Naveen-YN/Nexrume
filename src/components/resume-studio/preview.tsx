@@ -8,7 +8,10 @@ import {
   Bookmark, CheckCircle, Trophy, Users, Landmark, PenTool, 
   Compass, Library
 } from 'lucide-react';
-import { FaLinkedin, FaGlobe } from 'react-icons/fa';
+import { 
+  FaLinkedin, FaGlobe, FaTwitter, FaYoutube, FaTelegram, 
+  FaDiscord, FaSlack, FaMedium, FaInstagram, FaSkype, FaFacebook 
+} from 'react-icons/fa';
 import { SiGithub, SiLeetcode, SiCodechef, SiHackerrank } from 'react-icons/si';
 
 interface PreviewProps {
@@ -595,7 +598,7 @@ export const Preview: React.FC<PreviewProps> = ({
     
     const nameWeight = activeResume.nameBold !== false ? 'font-black' : 'font-semibold';
     const nameColor = activeResume.headingColor || '#09090b';
-    const iconColor = primaryHex;
+    const iconColor = activeResume.linkColor || primaryHex;
 
     // Build the dynamic social fields array combining default, legacy and dynamic contact channels
     const defaultFields = [
@@ -614,27 +617,41 @@ export const Preview: React.FC<PreviewProps> = ({
       .filter(f => !f.hidden && f.value?.trim())
       .map(f => ({ field: f.field, label: f.label || f.field, value: f.value }));
 
-    const socialItems = [...defaultFields, ...legacySocials, ...dynamicFields];
+    const getFieldIcon = (field: string, label?: string) => {
+      const name = (label || field || '').toLowerCase().trim();
+      if (name.includes('email')) return Mail;
+      if (name.includes('phone') || name.includes('mobile') || name.includes('contact')) return Phone;
+      if (name.includes('location') || name.includes('address')) return MapPin;
+      if (name.includes('linkedin')) return FaLinkedin;
+      if (name.includes('github')) return SiGithub;
+      if (name.includes('leetcode')) return SiLeetcode;
+      if (name.includes('codechef')) return SiCodechef;
+      if (name.includes('hackerrank')) return SiHackerrank;
+      
+      // Dynamic brand checks
+      if (name.includes('twitter') || name.includes('x.com')) return FaTwitter;
+      if (name.includes('youtube')) return FaYoutube;
+      if (name.includes('telegram')) return FaTelegram;
+      if (name.includes('discord')) return FaDiscord;
+      if (name.includes('slack')) return FaSlack;
+      if (name.includes('medium')) return FaMedium;
+      if (name.includes('instagram')) return FaInstagram;
+      if (name.includes('skype')) return FaSkype;
+      if (name.includes('facebook')) return FaFacebook;
 
-    const getFieldIcon = (field: string) => {
-      switch (field.toLowerCase()) {
-        case 'email': return Mail;
-        case 'phone': return Phone;
-        case 'location': return MapPin;
-        case 'linkedin': return FaLinkedin;
-        case 'github': return SiGithub;
-        case 'leetcode': return SiLeetcode;
-        case 'codechef': return SiCodechef;
-        case 'hackerrank': return SiHackerrank;
-        case 'portfolio':
-        case 'website': return Globe;
-        case 'nationality': return Flag;
-        case 'dob': return Calendar;
-        case 'visa': return Shield;
-        case 'availability': return Clock;
-        default: return Info;
-      }
+      if (name.includes('portfolio') || name.includes('website') || name.includes('web') || name.includes('link')) return Globe;
+      if (name.includes('nationality') || name.includes('citizen')) return Flag;
+      if (name.includes('dob') || name.includes('birth')) return Calendar;
+      if (name.includes('visa')) return Shield;
+      if (name.includes('availability')) return Clock;
+      
+      return Info;
     };
+
+    const socialItems = [...defaultFields, ...legacySocials, ...dynamicFields].map(item => ({
+      ...item,
+      Icon: getFieldIcon(item.field, item.label)
+    }));
 
     const separator = activeResume.headerDetailsSeparator === 'bar' ? '|' : activeResume.headerDetailsSeparator === 'icon' ? 'icon' : '•';
     const showIcons = activeResume.linkIconEnabled !== false;
@@ -666,88 +683,173 @@ export const Preview: React.FC<PreviewProps> = ({
           </p>
         )}
         
-        {activeResume.headerDetailsArrangement === 'stacked' ? (
-          <div className={`w-full text-[9.5px] text-zinc-650 mt-1 font-mono ${alignTextClass}`} style={{ wordBreak: 'break-word' }}>
-            {socialItems.map((item, idx) => {
-              const Icon = getFieldIcon(item.field);
-              return (
-                <div key={idx} style={{ margin: '2px 0' }}>
-                  <span style={{ display: 'inline-block', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                    {showIcons && (
-                      <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px', lineHeight: '1' }}>
-                        <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
-                      </span>
-                    )}
-                    <span style={{ display: 'inline-block', verticalAlign: 'middle' }}>{item.value}</span>
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        ) : activeResume.headerDetailsArrangement === 'grid' ? (
-          <div className={`grid grid-cols-2 gap-x-4 gap-y-1 text-[9.5px] text-zinc-650 mt-1 font-mono max-w-lg ${activeResume.nameAlign === 'center' ? 'mx-auto' : ''}`}>
-            {socialItems.map((item, idx) => {
-              const Icon = getFieldIcon(item.field);
-              return (
-                <div key={idx} style={{ textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  <span style={{ display: 'inline-block', verticalAlign: 'middle' }}>
-                    {showIcons && (
-                      <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px', lineHeight: '1' }}>
-                        <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
-                      </span>
-                    )}
-                    <span style={{ display: 'inline-block', verticalAlign: 'middle' }} className="truncate">{item.value}</span>
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div 
-            className={`w-full text-[9.5px] text-zinc-650 mt-1 font-mono ${alignTextClass}`}
-            style={{ wordBreak: 'break-word' }}
-          >
-            {socialItems.map((item, idx) => {
-              const Icon = getFieldIcon(item.field);
-              return (
-                <React.Fragment key={idx}>
-                  <span 
-                    style={{ 
-                      display: 'inline-block',
-                      verticalAlign: 'middle',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {showIcons && separator === 'icon' && (
-                      <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', lineHeight: '1' }}>
-                        <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
-                      </span>
-                    )}
-                    {showIcons && separator !== 'icon' && idx === 0 && (
-                      <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', lineHeight: '1' }}>
-                        <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
-                      </span>
-                    )}
-                    <span style={{ display: 'inline-block', verticalAlign: 'middle' }}>{item.value}</span>
-                  </span>
-                  {idx < socialItems.length - 1 && separator !== 'icon' && (
+        {(() => {
+          const formatUrl = (urlStr: string) => {
+            let clean = urlStr.trim();
+            if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+              clean = `https://${clean}`;
+            }
+            return clean;
+          };
+
+          const parseContactItem = (contact: { field: string; label: string; value?: string }) => {
+            const val = contact.value?.trim() || '';
+            if (!val) return { text: '', url: '' };
+
+            // Check for custom text | link format
+            if (val.includes('|')) {
+              const parts = val.split('|');
+              const text = parts[0].trim();
+              const url = parts.slice(1).join('|').trim();
+              return { text, url: formatUrl(url) };
+            }
+
+            // Check if it's a URL
+            const isUrl = val.startsWith('http://') || val.startsWith('https://') || val.startsWith('www.');
+            if (isUrl) {
+              const url = formatUrl(val);
+              let text = val;
+              try {
+                const cleanUrl = val.startsWith('www.') ? `https://${val}` : val;
+                const urlObj = new URL(cleanUrl);
+                
+                if (['linkedin', 'github', 'leetcode', 'codechef', 'hackerrank'].includes(contact.field.toLowerCase())) {
+                  const handle = urlObj.pathname.replace(/^\/+/g, '').replace(/\/+$/g, '');
+                  text = handle ? handle : (contact.label || contact.field);
+                } else {
+                  text = urlObj.hostname.replace('www.', '');
+                }
+              } catch (e) {
+                text = val;
+              }
+              return { text, url };
+            }
+
+            // Check if it's an email
+            if (contact.field === 'email' || (val.includes('@') && !val.includes(' '))) {
+              const email = val.startsWith('mailto:') ? val : `mailto:${val}`;
+              return { text: val, url: email };
+            }
+
+            return { text: val, url: '' };
+          };
+
+          const linkStyle: React.CSSProperties = {
+            display: 'inline-block',
+            verticalAlign: 'middle',
+            color: activeResume.linkColor || (activeResume.linkBlueColor !== false ? '#2563eb' : primaryHex),
+            fontWeight: activeResume.linkFontWeight || 'normal',
+            fontStyle: activeResume.linkItalic ? 'italic' : 'normal',
+            textDecoration: activeResume.linkUnderline !== false ? 'underline' : 'none'
+          };
+
+          const textStyle: React.CSSProperties = {
+            display: 'inline-block',
+            verticalAlign: 'middle',
+            color: activeResume.bodyTextColor || '#4b5563',
+          };
+
+          return activeResume.headerDetailsArrangement === 'stacked' ? (
+            <div className={`w-full text-[9.5px] text-zinc-650 mt-1 font-mono ${alignTextClass}`} style={{ wordBreak: 'break-word' }}>
+              {socialItems.map((item, idx) => {
+                const Icon = item.Icon;
+                const { text, url } = parseContactItem(item);
+                if (!text) return null;
+                return (
+                  <div key={idx} style={{ margin: '2px 0' }}>
+                    <span style={{ display: 'inline-block', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                      {showIcons && (
+                        <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px', lineHeight: '1' }}>
+                          <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
+                        </span>
+                      )}
+                      {url ? (
+                        <a href={url} target="_blank" rel="noopener noreferrer" style={linkStyle}>{text}</a>
+                      ) : (
+                        <span style={textStyle}>{text}</span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : activeResume.headerDetailsArrangement === 'grid' ? (
+            <div className={`grid grid-cols-2 gap-x-4 gap-y-1 text-[9.5px] text-zinc-650 mt-1 font-mono max-w-lg ${activeResume.nameAlign === 'center' ? 'mx-auto' : ''}`}>
+              {socialItems.map((item, idx) => {
+                const Icon = item.Icon;
+                const { text, url } = parseContactItem(item);
+                if (!text) return null;
+                return (
+                  <div key={idx} style={{ textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+                      {showIcons && (
+                        <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px', lineHeight: '1' }}>
+                          <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
+                        </span>
+                      )}
+                      {url ? (
+                        <a href={url} target="_blank" rel="noopener noreferrer" style={linkStyle} className="truncate">{text}</a>
+                      ) : (
+                        <span style={textStyle} className="truncate">{text}</span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div 
+              className={`w-full text-[9.5px] text-zinc-650 mt-1 font-mono ${alignTextClass}`}
+              style={{ wordBreak: 'break-word' }}
+            >
+              {socialItems.map((item, idx) => {
+                const Icon = item.Icon;
+                const { text, url } = parseContactItem(item);
+                if (!text) return null;
+                return (
+                  <React.Fragment key={idx}>
                     <span 
-                      className="text-zinc-300 font-bold" 
                       style={{ 
-                        display: 'inline-block', 
-                        verticalAlign: 'middle', 
-                        marginLeft: '8px', 
-                        marginRight: '8px' 
+                        display: 'inline-block',
+                        verticalAlign: 'middle',
+                        whiteSpace: 'nowrap'
                       }}
                     >
-                      {separator}
+                      {showIcons && separator === 'icon' && (
+                        <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', lineHeight: '1' }}>
+                          <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
+                        </span>
+                      )}
+                      {showIcons && separator !== 'icon' && idx === 0 && (
+                        <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', lineHeight: '1' }}>
+                          <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
+                        </span>
+                      )}
+                      {url ? (
+                        <a href={url} target="_blank" rel="noopener noreferrer" style={linkStyle}>{text}</a>
+                      ) : (
+                        <span style={textStyle}>{text}</span>
+                      )}
                     </span>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        )}
+                    {idx < socialItems.length - 1 && separator !== 'icon' && (
+                      <span 
+                        className="text-zinc-300 font-bold" 
+                        style={{ 
+                          display: 'inline-block', 
+                          verticalAlign: 'middle', 
+                          marginLeft: '8px', 
+                          marginRight: '8px' 
+                        }}
+                      >
+                        {separator}
+                      </span>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
     );
   };

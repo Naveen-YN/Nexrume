@@ -13,6 +13,7 @@ export default function ResumePrintPage() {
     (window as any).renderResume = (resume: ResumeVersion, profile: UserProfile) => {
       setActiveResume(resume);
       setUserProfile(profile);
+      document.title = resume.name || 'Resume';
     };
 
     // Notify Puppeteer that the window hooks are ready

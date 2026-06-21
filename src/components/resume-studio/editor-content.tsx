@@ -564,6 +564,9 @@ export const EditorContent: React.FC<EditorContentProps> = ({
             {socialFields.length > 0 && (
               <div className="space-y-3.5 pt-3 border-t border-zinc-900">
                 <span className="text-[10px] font-black text-zinc-400 block uppercase tracking-wider">Additional Contact Channels</span>
+                <span className="text-[9.5px] text-zinc-550 block -mt-2">
+                  Tip: Use <code className="text-indigo-400 bg-zinc-950 px-1 py-0.5 rounded font-mono">Label|URL</code> (e.g. <code className="text-zinc-400 font-mono">My Portfolio|portfolio.dev</code>) to display custom text instead of the URL.
+                </span>
                 <div className="space-y-2.5">
                   {socialFields.map((field, index) => {
                     const matchedCfg = allOptionalFields.find(f => f.field === field.field);

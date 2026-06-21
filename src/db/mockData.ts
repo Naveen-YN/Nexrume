@@ -158,6 +158,8 @@ export interface ResumeVersion {
   linkUnderline?: boolean;
   linkBlueColor?: boolean;
   linkIconEnabled?: boolean;
+  linkItalic?: boolean;
+  linkFontWeight?: string;
   linkIconStyle?: 'arrow' | 'external' | 'chain';
   linkApplyHeaderEmail?: boolean;
   linkApplyHeaderPhone?: boolean;
