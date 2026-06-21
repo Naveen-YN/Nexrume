@@ -921,7 +921,14 @@ export const Preview: React.FC<PreviewProps> = ({
     const showIcons = activeResume.linkIconEnabled !== false;
 
     return (
-      <div className={`${alignTextClass} w-full`}>
+      <div 
+        className="w-full flex flex-col"
+        style={{ 
+          alignItems: activeResume.nameAlign === 'center' ? 'center' : activeResume.nameAlign === 'right' ? 'flex-end' : 'flex-start',
+          textAlign: activeResume.nameAlign || 'left',
+          gap: resTitle ? '4px' : '8px'
+        }}
+      >
         <h1 
           className={`${nameWeight} tracking-tight leading-tight`} 
           style={{ 
@@ -929,7 +936,6 @@ export const Preview: React.FC<PreviewProps> = ({
             fontSize: activeResume.nameSizePx ? `${activeResume.nameSizePx}px` : '32px',
             textAlign: activeResume.nameAlign || 'left',
             letterSpacing: letterSpacingStyle === 'loose' ? '0.05em' : letterSpacingStyle === 'tight' ? '-0.02em' : 'normal',
-            marginBottom: resTitle ? '4px' : '8px'
           }}
         >
           {resName}
@@ -940,7 +946,7 @@ export const Preview: React.FC<PreviewProps> = ({
             style={{ 
               color: activeResume.applyColorJobTitle ? primaryHex : undefined, 
               textAlign: activeResume.nameAlign || 'left',
-              marginBottom: '8px'
+              marginBottom: '4px'
             }}
           >
             {resTitle}
@@ -1003,8 +1009,6 @@ export const Preview: React.FC<PreviewProps> = ({
           };
 
           const linkStyle: React.CSSProperties = {
-            display: 'inline-block',
-            verticalAlign: 'middle',
             color: activeResume.linkColor || (activeResume.linkBlueColor !== false ? '#2563eb' : primaryHex),
             fontWeight: activeResume.linkFontWeight || 'normal',
             fontStyle: activeResume.linkItalic ? 'italic' : 'normal',
@@ -1012,101 +1016,97 @@ export const Preview: React.FC<PreviewProps> = ({
           };
 
           const textStyle: React.CSSProperties = {
-            display: 'inline-block',
-            verticalAlign: 'middle',
             color: activeResume.bodyTextColor || '#4b5563',
           };
 
+          const getContactItemSpan = (item: any, idx: number, iconSpace: string) => {
+            const Icon = item.Icon;
+            const { text, url } = parseContactItem(item);
+            if (!text) return null;
+            
+            return (
+              <span 
+                style={{ 
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: iconSpace,
+                  whiteSpace: 'nowrap',
+                  verticalAlign: 'middle'
+                }}
+              >
+                {showIcons && (
+                  <Icon 
+                    size={11} 
+                    className="shrink-0" 
+                    style={{ 
+                      color: iconColor, 
+                      width: '11px', 
+                      height: '11px',
+                      display: 'inline-block',
+                      verticalAlign: 'middle'
+                    }} 
+                  />
+                )}
+                {url ? (
+                  <a href={url} target="_blank" rel="noopener noreferrer" style={linkStyle}>{text}</a>
+                ) : (
+                  <span style={textStyle}>{text}</span>
+                )}
+              </span>
+            );
+          };
+
           return activeResume.headerDetailsArrangement === 'stacked' ? (
-            <div className={`w-full text-[9.5px] text-zinc-650 mt-1 font-mono ${alignTextClass}`} style={{ wordBreak: 'break-word' }}>
+            <div 
+              className="w-full text-[9.5px] text-zinc-650 font-mono flex flex-col gap-1" 
+              style={{ 
+                alignItems: activeResume.nameAlign === 'center' ? 'center' : activeResume.nameAlign === 'right' ? 'flex-end' : 'flex-start',
+                wordBreak: 'break-word' 
+              }}
+            >
               {socialItems.map((item, idx) => {
-                const Icon = item.Icon;
-                const { text, url } = parseContactItem(item);
-                if (!text) return null;
-                return (
-                  <div key={idx} style={{ margin: '2px 0' }}>
-                    <span style={{ display: 'inline-block', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                      {showIcons && (
-                        <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px', lineHeight: '1' }}>
-                          <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
-                        </span>
-                      )}
-                      {url ? (
-                        <a href={url} target="_blank" rel="noopener noreferrer" style={linkStyle}>{text}</a>
-                      ) : (
-                        <span style={textStyle}>{text}</span>
-                      )}
-                    </span>
-                  </div>
-                );
+                const span = getContactItemSpan(item, idx, '6px');
+                if (!span) return null;
+                return <div key={idx}>{span}</div>;
               })}
             </div>
           ) : activeResume.headerDetailsArrangement === 'grid' ? (
-            <div className={`grid grid-cols-2 gap-x-4 gap-y-1 text-[9.5px] text-zinc-650 mt-1 font-mono max-w-lg ${activeResume.nameAlign === 'center' ? 'mx-auto' : ''}`}>
+            <div className={`grid grid-cols-2 gap-x-4 gap-y-1 text-[9.5px] text-zinc-650 font-mono max-w-lg ${activeResume.nameAlign === 'center' ? 'mx-auto' : ''}`}>
               {socialItems.map((item, idx) => {
-                const Icon = item.Icon;
-                const { text, url } = parseContactItem(item);
-                if (!text) return null;
+                const span = getContactItemSpan(item, idx, '6px');
+                if (!span) return null;
                 return (
                   <div key={idx} style={{ textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <span style={{ display: 'inline-block', verticalAlign: 'middle' }}>
-                      {showIcons && (
-                        <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px', lineHeight: '1' }}>
-                          <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
-                        </span>
-                      )}
-                      {url ? (
-                        <a href={url} target="_blank" rel="noopener noreferrer" style={linkStyle} className="truncate">{text}</a>
-                      ) : (
-                        <span style={textStyle} className="truncate">{text}</span>
-                      )}
-                    </span>
+                    {span}
                   </div>
                 );
               })}
             </div>
           ) : (
             <div 
-              className={`w-full text-[9.5px] text-zinc-650 mt-1 font-mono ${alignTextClass}`}
-              style={{ wordBreak: 'break-word' }}
+              className="w-full text-[9.5px] text-zinc-650 font-mono flex flex-wrap"
+              style={{ 
+                justifyContent: activeResume.nameAlign === 'center' ? 'center' : activeResume.nameAlign === 'right' ? 'flex-end' : 'flex-start',
+                alignItems: 'center',
+                columnGap: '12px',
+                rowGap: '4px',
+                wordBreak: 'break-word' 
+              }}
             >
               {socialItems.map((item, idx) => {
-                const Icon = item.Icon;
-                const { text, url } = parseContactItem(item);
-                if (!text) return null;
+                const span = getContactItemSpan(item, idx, '4px');
+                if (!span) return null;
                 return (
                   <React.Fragment key={idx}>
-                    <span 
-                      style={{ 
-                        display: 'inline-block',
-                        verticalAlign: 'middle',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {showIcons && separator === 'icon' && (
-                        <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', lineHeight: '1' }}>
-                          <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
-                        </span>
-                      )}
-                      {showIcons && separator !== 'icon' && idx === 0 && (
-                        <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', lineHeight: '1' }}>
-                          <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
-                        </span>
-                      )}
-                      {url ? (
-                        <a href={url} target="_blank" rel="noopener noreferrer" style={linkStyle}>{text}</a>
-                      ) : (
-                        <span style={textStyle}>{text}</span>
-                      )}
-                    </span>
+                    {span}
                     {idx < socialItems.length - 1 && separator !== 'icon' && (
                       <span 
-                        className="text-zinc-300 font-bold" 
+                        className="text-zinc-300 font-bold select-none" 
                         style={{ 
-                          display: 'inline-block', 
-                          verticalAlign: 'middle', 
-                          marginLeft: '8px', 
-                          marginRight: '8px' 
+                          marginLeft: '2px', 
+                          marginRight: '2px',
+                          display: 'inline-block',
+                          verticalAlign: 'middle'
                         }}
                       >
                         {separator}
