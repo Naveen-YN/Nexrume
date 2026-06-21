@@ -665,25 +665,37 @@ export const Preview: React.FC<PreviewProps> = ({
         )}
         
         {activeResume.headerDetailsArrangement === 'stacked' ? (
-          <div className="flex flex-col gap-0.5 text-[9.5px] text-zinc-650 mt-1 font-mono">
+          <div className={`w-full text-[9.5px] text-zinc-650 mt-1 font-mono ${alignTextClass}`} style={{ wordBreak: 'break-word' }}>
             {socialItems.map((item, idx) => {
               const Icon = getFieldIcon(item.field);
               return (
-                <div key={idx} className={`flex items-center ${alignClass}`}>
-                  {showIcons && <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor, marginRight: '6px' }} />}
-                  <span>{item.value}</span>
+                <div key={idx} style={{ margin: '2px 0' }}>
+                  <span style={{ display: 'inline-block', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                    {showIcons && (
+                      <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px', lineHeight: '1' }}>
+                        <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
+                      </span>
+                    )}
+                    <span style={{ display: 'inline-block', verticalAlign: 'middle' }}>{item.value}</span>
+                  </span>
                 </div>
               );
             })}
           </div>
         ) : activeResume.headerDetailsArrangement === 'grid' ? (
-          <div className={`grid grid-cols-2 gap-1 text-[9.5px] text-zinc-650 mt-1 font-mono max-w-lg ${activeResume.nameAlign === 'center' ? 'mx-auto' : ''}`}>
+          <div className={`grid grid-cols-2 gap-x-4 gap-y-1 text-[9.5px] text-zinc-650 mt-1 font-mono max-w-lg ${activeResume.nameAlign === 'center' ? 'mx-auto' : ''}`}>
             {socialItems.map((item, idx) => {
               const Icon = getFieldIcon(item.field);
               return (
-                <div key={idx} className="flex items-center truncate">
-                  {showIcons && <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor, marginRight: '6px' }} />}
-                  <span className="truncate">{item.value}</span>
+                <div key={idx} style={{ textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+                    {showIcons && (
+                      <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px', lineHeight: '1' }}>
+                        <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
+                      </span>
+                    )}
+                    <span style={{ display: 'inline-block', verticalAlign: 'middle' }} className="truncate">{item.value}</span>
+                  </span>
                 </div>
               );
             })}
@@ -697,28 +709,25 @@ export const Preview: React.FC<PreviewProps> = ({
               const Icon = getFieldIcon(item.field);
               return (
                 <React.Fragment key={idx}>
-                  <div 
-                    className="inline-flex items-center" 
+                  <span 
                     style={{ 
+                      display: 'inline-block',
                       verticalAlign: 'middle',
-                      display: 'inline-flex',
-                      alignItems: 'center'
+                      whiteSpace: 'nowrap'
                     }}
                   >
                     {showIcons && separator === 'icon' && (
-                      <Icon 
-                        className="w-3 h-3 shrink-0" 
-                        style={{ color: iconColor, marginRight: '4px', display: 'inline-block', verticalAlign: 'middle' }} 
-                      />
+                      <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', lineHeight: '1' }}>
+                        <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
+                      </span>
                     )}
                     {showIcons && separator !== 'icon' && idx === 0 && (
-                      <Icon 
-                        className="w-3 h-3 shrink-0" 
-                        style={{ color: iconColor, marginRight: '4px', display: 'inline-block', verticalAlign: 'middle' }} 
-                      />
+                      <span style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '4px', lineHeight: '1' }}>
+                        <Icon className="w-3 h-3 shrink-0" style={{ color: iconColor }} />
+                      </span>
                     )}
                     <span style={{ display: 'inline-block', verticalAlign: 'middle' }}>{item.value}</span>
-                  </div>
+                  </span>
                   {idx < socialItems.length - 1 && separator !== 'icon' && (
                     <span 
                       className="text-zinc-300 font-bold" 
@@ -737,7 +746,6 @@ export const Preview: React.FC<PreviewProps> = ({
             })}
           </div>
         )}
-        <div className="w-full border-b border-zinc-200 pt-2" style={{ borderColor: activeResume.dividerColor || '#e4e4e7' }}></div>
       </div>
     );
   };
@@ -778,10 +786,10 @@ export const Preview: React.FC<PreviewProps> = ({
         fontFamily: activeResume.customFont ? `"${activeResume.customFont}", sans-serif` : (activeResume.fontFamily === 'serif' ? 'Georgia, serif' : activeResume.fontFamily === 'mono' ? 'Courier, monospace' : 'Inter, system-ui, sans-serif'),
         fontSize: fontSizeStyle,
         lineHeight: lineHeightStyle,
-        paddingTop: activeResume.marginVertical !== undefined ? `${activeResume.marginVertical}mm` : '20mm',
-        paddingBottom: activeResume.marginVertical !== undefined ? `${activeResume.marginVertical}mm` : '20mm',
-        paddingLeft: activeResume.marginHorizontal !== undefined ? `${activeResume.marginHorizontal}mm` : '20mm',
-        paddingRight: activeResume.marginHorizontal !== undefined ? `${activeResume.marginHorizontal}mm` : '20mm',
+        paddingTop: activeResume.marginTop !== undefined ? `${activeResume.marginTop}mm` : (activeResume.marginVertical !== undefined ? `${activeResume.marginVertical}mm` : '20mm'),
+        paddingBottom: activeResume.marginBottom !== undefined ? `${activeResume.marginBottom}mm` : (activeResume.marginVertical !== undefined ? `${activeResume.marginVertical}mm` : '20mm'),
+        paddingLeft: activeResume.marginLeft !== undefined ? `${activeResume.marginLeft}mm` : (activeResume.marginHorizontal !== undefined ? `${activeResume.marginHorizontal}mm` : '20mm'),
+        paddingRight: activeResume.marginRight !== undefined ? `${activeResume.marginRight}mm` : (activeResume.marginHorizontal !== undefined ? `${activeResume.marginHorizontal}mm` : '20mm'),
         backgroundColor: activeResume.backgroundColor || '#ffffff'
       }}
     >

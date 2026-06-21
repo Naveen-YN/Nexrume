@@ -181,6 +181,10 @@ export interface ResumeVersion {
   lineHeight?: number;
   marginHorizontal?: number;
   marginVertical?: number;
+  marginTop?: number;
+  marginBottom?: number;
+  marginLeft?: number;
+  marginRight?: number;
   entrySpacing?: number;
   entryLayout?: 'standard' | 'dates-left' | 'dates-right' | 'minimal';
   titleSubtitleSize?: 'S' | 'M' | 'L';

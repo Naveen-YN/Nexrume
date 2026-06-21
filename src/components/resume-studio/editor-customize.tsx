@@ -346,19 +346,69 @@ export const EditorCustomize: React.FC<EditorCustomizeProps> = ({
               />
             </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-[9px] uppercase font-bold text-zinc-500">
-                <span>Margins (H & V)</span>
-                <span className="font-mono text-zinc-400">{activeResume.marginVertical || 12}mm</span>
+            <div className="space-y-3 pt-2 border-t border-zinc-900 col-span-1 sm:col-span-2">
+              <span className="text-[10px] font-bold text-zinc-450 block uppercase tracking-wider">Independent Page Margins</span>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-[9px] uppercase font-bold text-zinc-500">
+                    <span>Top Margin</span>
+                    <span className="font-mono text-zinc-400">{(activeResume.marginTop !== undefined ? activeResume.marginTop : (activeResume.marginVertical || 12))}mm</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={5}
+                    max={40}
+                    value={activeResume.marginTop !== undefined ? activeResume.marginTop : (activeResume.marginVertical || 12)}
+                    onChange={e => onUpdateResume({ marginTop: parseInt(e.target.value) })}
+                    className="w-full h-1 bg-zinc-950 rounded-lg appearance-none cursor-pointer accent-indigo-650"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-[9px] uppercase font-bold text-zinc-500">
+                    <span>Bottom Margin</span>
+                    <span className="font-mono text-zinc-400">{(activeResume.marginBottom !== undefined ? activeResume.marginBottom : (activeResume.marginVertical || 12))}mm</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={5}
+                    max={40}
+                    value={activeResume.marginBottom !== undefined ? activeResume.marginBottom : (activeResume.marginVertical || 12)}
+                    onChange={e => onUpdateResume({ marginBottom: parseInt(e.target.value) })}
+                    className="w-full h-1 bg-zinc-950 rounded-lg appearance-none cursor-pointer accent-indigo-650"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-[9px] uppercase font-bold text-zinc-500">
+                    <span>Left Margin</span>
+                    <span className="font-mono text-zinc-400">{(activeResume.marginLeft !== undefined ? activeResume.marginLeft : (activeResume.marginHorizontal || 12))}mm</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={5}
+                    max={40}
+                    value={activeResume.marginLeft !== undefined ? activeResume.marginLeft : (activeResume.marginHorizontal || 12)}
+                    onChange={e => onUpdateResume({ marginLeft: parseInt(e.target.value) })}
+                    className="w-full h-1 bg-zinc-950 rounded-lg appearance-none cursor-pointer accent-indigo-650"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-[9px] uppercase font-bold text-zinc-500">
+                    <span>Right Margin</span>
+                    <span className="font-mono text-zinc-400">{(activeResume.marginRight !== undefined ? activeResume.marginRight : (activeResume.marginHorizontal || 12))}mm</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={5}
+                    max={40}
+                    value={activeResume.marginRight !== undefined ? activeResume.marginRight : (activeResume.marginHorizontal || 12)}
+                    onChange={e => onUpdateResume({ marginRight: parseInt(e.target.value) })}
+                    className="w-full h-1 bg-zinc-950 rounded-lg appearance-none cursor-pointer accent-indigo-650"
+                  />
+                </div>
               </div>
-              <input
-                type="range"
-                min={5}
-                max={30}
-                value={activeResume.marginVertical || 12}
-                onChange={e => onUpdateResume({ marginVertical: parseInt(e.target.value), marginHorizontal: parseInt(e.target.value) })}
-                className="w-full h-1 bg-zinc-950 rounded-lg appearance-none cursor-pointer accent-indigo-650"
-              />
             </div>
           </div>
         </div>
