@@ -34,13 +34,33 @@ export default function ResumePrintPage() {
     <main className="bg-white min-h-screen flex items-start justify-center">
       {/* Styles to enforce correct dimensions and print layouts */}
       <style dangerouslySetInnerHTML={{ __html: `
+        @page {
+          size: auto;
+          margin: 0mm !important;
+        }
         @media print {
           html, body {
             background-color: #ffffff !important;
             margin: 0 !important;
             padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            overflow: visible !important;
+          }
+          main {
+            display: block !important;
+            min-height: 0 !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: none !important;
+          }
+          #resume-print-view {
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           #resume-print-canvas {
             border: none !important;

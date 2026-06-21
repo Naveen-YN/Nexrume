@@ -855,23 +855,6 @@ export const Preview: React.FC<PreviewProps> = ({
     const nameColor = activeResume.headingColor || '#09090b';
     const iconColor = activeResume.linkColor || primaryHex;
 
-    // Build the dynamic social fields array combining default, legacy and dynamic contact channels
-    const defaultFields = [
-      { field: 'email', label: 'Email', value: resEmail },
-      { field: 'phone', label: 'Phone', value: resPhone },
-      { field: 'location', label: 'Location', value: resLocation },
-    ].filter(i => i.value?.trim());
-
-    const legacySocials = [
-      { field: 'linkedin', label: 'LinkedIn', value: activeResume.personalLinkedin },
-      { field: 'github', label: 'GitHub', value: activeResume.personalGithub },
-      { field: 'portfolio', label: 'Portfolio', value: activeResume.personalPortfolio }
-    ].filter(i => i.value?.trim());
-
-    const dynamicFields = (activeResume.socialFields || [])
-      .filter(f => !f.hidden && f.value?.trim())
-      .map(f => ({ field: f.field, label: f.label || f.field, value: f.value }));
-
     const getFieldIcon = (field: string, label?: string) => {
       const name = (label || field || '').toLowerCase().trim();
       if (name.includes('email')) return Mail;
@@ -884,7 +867,7 @@ export const Preview: React.FC<PreviewProps> = ({
       if (name.includes('hackerrank')) return SiHackerrank;
       
       // Dynamic brand checks
-      if (name.includes('twitter') || name.includes('x.com')) return FaTwitter;
+      if (name.includes('twitter') || name.includes('x.com') || name === 'x') return FaTwitter;
       if (name.includes('youtube')) return FaYoutube;
       if (name.includes('telegram')) return FaTelegram;
       if (name.includes('discord')) return FaDiscord;
@@ -894,7 +877,7 @@ export const Preview: React.FC<PreviewProps> = ({
       if (name.includes('skype')) return FaSkype;
       if (name.includes('facebook')) return FaFacebook;
 
-      if (name.includes('portfolio') || name.includes('website') || name.includes('web') || name.includes('link')) return Globe;
+      if (name.includes('portfolio') || name.includes('website') || name.includes('web') || name.includes('link') || name.includes('gitbook') || name.includes('orcid') || name.includes('bluesky') || name.includes('threads')) return Globe;
       if (name.includes('nationality') || name.includes('citizen')) return Flag;
       if (name.includes('dob') || name.includes('birth')) return Calendar;
       if (name.includes('visa')) return Shield;
@@ -903,10 +886,36 @@ export const Preview: React.FC<PreviewProps> = ({
       return Info;
     };
 
-    const socialItems = [...defaultFields, ...legacySocials, ...dynamicFields].map(item => ({
-      ...item,
-      Icon: getFieldIcon(item.field, item.label)
-    }));
+    let socialItems: any[] = [];
+    if (activeResume.socialFields && activeResume.socialFields.length > 0) {
+      socialItems = activeResume.socialFields
+        .filter(f => !f.hidden && f.value?.trim())
+        .map(f => ({
+          field: f.field,
+          label: f.label || f.field,
+          value: f.value,
+          linkUrl: f.linkUrl,
+          Icon: getFieldIcon(f.field, f.label)
+        }));
+    } else {
+      const defaultFields = [
+        { field: 'email', label: 'Email', value: resEmail },
+        { field: 'phone', label: 'Phone', value: resPhone },
+        { field: 'location', label: 'Location', value: resLocation },
+      ].filter(i => i.value?.trim());
+
+      const legacySocials = [
+        { field: 'linkedin', label: 'LinkedIn', value: activeResume.personalLinkedin },
+        { field: 'github', label: 'GitHub', value: activeResume.personalGithub },
+        { field: 'portfolio', label: 'Portfolio', value: activeResume.personalPortfolio }
+      ].filter(i => i.value?.trim());
+
+      socialItems = [...defaultFields, ...legacySocials].map(item => ({
+        ...item,
+        linkUrl: undefined,
+        Icon: getFieldIcon(item.field, item.label)
+      }));
+    }
 
     const separator = activeResume.headerDetailsSeparator === 'bar' ? '|' : activeResume.headerDetailsSeparator === 'icon' ? 'icon' : '•';
     const showIcons = activeResume.linkIconEnabled !== false;
@@ -947,9 +956,13 @@ export const Preview: React.FC<PreviewProps> = ({
             return clean;
           };
 
-          const parseContactItem = (contact: { field: string; label: string; value?: string }) => {
+          const parseContactItem = (contact: { field: string; label: string; value?: string; linkUrl?: string }) => {
             const val = contact.value?.trim() || '';
             if (!val) return { text: '', url: '' };
+
+            if (contact.linkUrl?.trim()) {
+              return { text: val, url: formatUrl(contact.linkUrl) };
+            }
 
             // Check for custom text | link format
             if (val.includes('|')) {

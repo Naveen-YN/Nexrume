@@ -239,7 +239,7 @@ export interface ResumeVersion {
   patentsList?: { id: string; title: string; number: string; date: string; description: string; hidden?: boolean }[];
   hobbiesList?: { id: string; name: string; hidden?: boolean }[];
   declarationText?: string;
-  socialFields?: { id: string; field: string; label: string; value: string; hidden?: boolean }[];
+  socialFields?: { id: string; field: string; label: string; value: string; hidden?: boolean; linkUrl?: string }[];
 }
 
 

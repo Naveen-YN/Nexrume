@@ -150,6 +150,13 @@ export const EditorContent: React.FC<EditorContentProps> = ({
   const [isPhotoDragging, setIsPhotoDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // New Personal details states
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const [isCustomizationsOpen, setIsCustomizationsOpen] = useState(false);
+  const [draggedContactIndex, setDraggedContactIndex] = useState<number | null>(null);
+  const [showMorePersonal, setShowMorePersonal] = useState(false);
+  const [showMoreSocial, setShowMoreSocial] = useState(false);
+
   const getEditorFieldValue = (field: string) => {
     const val = activeResume[field as keyof ResumeVersion];
     if (val !== undefined) return val as string;
@@ -166,21 +173,88 @@ export const EditorContent: React.FC<EditorContentProps> = ({
 
   // Optional personal fields list
   const allOptionalFields = [
+    { field: 'email', label: 'Email', placeholder: 'e.g. email@domain.com' },
+    { field: 'phone', label: 'Phone', placeholder: 'e.g. +1 (555) 019-2834' },
+    { field: 'location', label: 'Location', placeholder: 'e.g. San Francisco, CA' },
     { field: 'linkedin', label: 'LinkedIn', placeholder: 'e.g. linkedin.com/in/username' },
     { field: 'github', label: 'GitHub', placeholder: 'e.g. github.com/username' },
     { field: 'portfolio', label: 'Portfolio', placeholder: 'e.g. portfolio.dev' },
-    { field: 'leetcode', label: 'LeetCode', placeholder: 'e.g. leetcode.com/username' },
-    { field: 'codechef', label: 'CodeChef', placeholder: 'e.g. codechef.com/users/username' },
-    { field: 'hackerrank', label: 'HackerRank', placeholder: 'e.g. hackerrank.com/username' },
-    { field: 'website', label: 'Website', placeholder: 'e.g. mywebsite.com' },
+    { field: 'website', label: 'Website', placeholder: 'e.g. website.com' },
     { field: 'nationality', label: 'Nationality', placeholder: 'e.g. Indian, American' },
     { field: 'dob', label: 'Date of Birth', placeholder: 'e.g. 24 Jan 2000' },
     { field: 'visa', label: 'Visa Status', placeholder: 'e.g. H-1B, F-1 OPT, Citizen' },
     { field: 'availability', label: 'Availability', placeholder: 'e.g. Immediate, 1 Month' },
-    { field: 'custom', label: 'Custom Field', placeholder: 'e.g. Custom details' }
+    { field: 'passport', label: 'Passport or Id', placeholder: 'e.g. Passport or ID details' },
+    { field: 'gender', label: 'Gender/Pronoun', placeholder: 'e.g. Male, Female, They/Them' },
+    { field: 'disability', label: 'Disability', placeholder: 'e.g. None, Details' },
+    { field: 'gitbook', label: 'GitBook', placeholder: 'e.g. username.gitbook.io' },
+    { field: 'medium', label: 'Medium', placeholder: 'e.g. medium.com/@username' },
+    { field: 'orcid', label: 'ORCID', placeholder: 'e.g. 0000-0000-0000-0000' },
+    { field: 'skype', label: 'Skype', placeholder: 'e.g. live:username' },
+    { field: 'bluesky', label: 'Bluesky', placeholder: 'e.g. username.bsky.social' },
+    { field: 'threads', label: 'Threads', placeholder: 'e.g. threads.net/@username' },
+    { field: 'x', label: 'X', placeholder: 'e.g. x.com/username' },
+    { field: 'leetcode', label: 'LeetCode', placeholder: 'e.g. leetcode.com/username' },
+    { field: 'codechef', label: 'CodeChef', placeholder: 'e.g. codechef.com/users/username' },
+    { field: 'hackerrank', label: 'HackerRank', placeholder: 'e.g. hackerrank.com/username' },
+    { field: 'custom', label: 'Custom Field', placeholder: 'e.g. Details' }
   ];
 
-  const socialFields = activeResume.socialFields || [];
+  const getUnifiedSocialFields = () => {
+    const fields = [...(activeResume.socialFields || [])];
+    
+    const ensureField = (fieldKey: string, label: string, defaultValue: string) => {
+      if (!fields.some(f => f.field === fieldKey)) {
+        fields.push({
+          id: `social-${fieldKey}`,
+          field: fieldKey,
+          label,
+          value: defaultValue,
+          hidden: false
+        });
+      }
+    };
+
+    ensureField('email', 'Email', activeResume.personalEmail !== undefined ? activeResume.personalEmail : (userProfile.email || ''));
+    ensureField('phone', 'Phone', activeResume.personalPhone !== undefined ? activeResume.personalPhone : (userProfile.phone || ''));
+    ensureField('location', 'Location', activeResume.personalLocation !== undefined ? activeResume.personalLocation : (userProfile.location || ''));
+
+    // Legacy fields migration
+    if (activeResume.personalLinkedin && !fields.some(f => f.field === 'linkedin')) {
+      fields.push({
+        id: 'social-linkedin',
+        field: 'linkedin',
+        label: 'LinkedIn',
+        value: activeResume.personalLinkedin,
+        linkUrl: activeResume.personalLinkedin,
+        hidden: false
+      });
+    }
+    if (activeResume.personalGithub && !fields.some(f => f.field === 'github')) {
+      fields.push({
+        id: 'social-github',
+        field: 'github',
+        label: 'GitHub',
+        value: activeResume.personalGithub,
+        linkUrl: activeResume.personalGithub,
+        hidden: false
+      });
+    }
+    if (activeResume.personalPortfolio && !fields.some(f => f.field === 'portfolio')) {
+      fields.push({
+        id: 'social-portfolio',
+        field: 'portfolio',
+        label: 'Portfolio',
+        value: activeResume.personalPortfolio,
+        linkUrl: activeResume.personalPortfolio,
+        hidden: false
+      });
+    }
+
+    return fields;
+  };
+
+  const socialFields = getUnifiedSocialFields();
 
   // Toggle section collapse
   const toggleSectionCollapse = (id: string) => {
@@ -215,7 +289,8 @@ export const EditorContent: React.FC<EditorContentProps> = ({
     setIsPhotoDragging(true);
   };
 
-  const handlePhotoDragLeave = () => {
+  const handlePhotoDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
     setIsPhotoDragging(false);
   };
 
@@ -231,7 +306,6 @@ export const EditorContent: React.FC<EditorContentProps> = ({
     const fieldConfig = allOptionalFields.find(f => f.field === fieldKey);
     if (!fieldConfig) return;
 
-    // Check if already exists
     if (socialFields.some(f => f.field === fieldKey)) return;
 
     const newField = {
@@ -239,6 +313,7 @@ export const EditorContent: React.FC<EditorContentProps> = ({
       field: fieldKey,
       label: fieldConfig.label,
       value: '',
+      linkUrl: '',
       hidden: false
     };
 
@@ -248,8 +323,35 @@ export const EditorContent: React.FC<EditorContentProps> = ({
   };
 
   const updateSocialFieldVal = (id: string, value: string) => {
+    const updated = socialFields.map(f => f.id === id ? { ...f, value } : f);
+    const target = socialFields.find(f => f.id === id);
+    const legacyUpdates: Partial<ResumeVersion> = {};
+    if (target) {
+      if (target.field === 'email') legacyUpdates.personalEmail = value;
+      if (target.field === 'phone') legacyUpdates.personalPhone = value;
+      if (target.field === 'location') legacyUpdates.personalLocation = value;
+      if (target.field === 'linkedin') legacyUpdates.personalLinkedin = value;
+      if (target.field === 'github') legacyUpdates.personalGithub = value;
+      if (target.field === 'portfolio') legacyUpdates.personalPortfolio = value;
+    }
     onUpdateResume({
-      socialFields: socialFields.map(f => f.id === id ? { ...f, value } : f)
+      socialFields: updated,
+      ...legacyUpdates
+    });
+  };
+
+  const updateSocialFieldLinkUrl = (id: string, linkUrl: string) => {
+    const updated = socialFields.map(f => f.id === id ? { ...f, linkUrl } : f);
+    const target = socialFields.find(f => f.id === id);
+    const legacyUpdates: Partial<ResumeVersion> = {};
+    if (target) {
+      if (target.field === 'linkedin') legacyUpdates.personalLinkedin = linkUrl;
+      if (target.field === 'github') legacyUpdates.personalGithub = linkUrl;
+      if (target.field === 'portfolio') legacyUpdates.personalPortfolio = linkUrl;
+    }
+    onUpdateResume({
+      socialFields: updated,
+      ...legacyUpdates
     });
   };
 
@@ -279,6 +381,24 @@ export const EditorContent: React.FC<EditorContentProps> = ({
     list[index] = list[nextIdx];
     list[nextIdx] = temp;
     onUpdateResume({ socialFields: list });
+  };
+
+  const handleContactFieldDrop = (dropIndex: number) => {
+    if (draggedContactIndex === null || draggedContactIndex === dropIndex) return;
+    const list = [...socialFields];
+    const draggedItem = list[draggedContactIndex];
+    list.splice(draggedContactIndex, 1);
+    list.splice(dropIndex, 0, draggedItem);
+    onUpdateResume({ socialFields: list });
+    setDraggedContactIndex(null);
+  };
+
+  const isLinkField = (field: string) => {
+    return [
+      'linkedin', 'github', 'portfolio', 'website', 'leetcode', 
+      'codechef', 'hackerrank', 'gitbook', 'medium', 'orcid', 
+      'skype', 'bluesky', 'threads', 'x', 'custom'
+    ].includes(field);
   };
 
   // Section Ordering Management
@@ -729,69 +849,108 @@ export const EditorContent: React.FC<EditorContentProps> = ({
               <div className="space-y-3.5 pt-3 border-t border-zinc-900">
                 <span className="text-[10px] font-black text-zinc-400 block uppercase tracking-wider">Additional Contact Channels</span>
                 <span className="text-[9.5px] text-zinc-550 block -mt-2">
-                  Tip: Use <code className="text-indigo-400 bg-zinc-950 px-1 py-0.5 rounded font-mono">Label|URL</code> (e.g. <code className="text-zinc-400 font-mono">My Portfolio|portfolio.dev</code>) to display custom text instead of the URL.
+                  Tip: For links, specify the Display Text (e.g. your name/username) and the Link URL.
                 </span>
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {socialFields.map((field, index) => {
                     const matchedCfg = allOptionalFields.find(f => f.field === field.field);
+                    const isLink = isLinkField(field.field);
                     return (
                       <div 
                         key={field.id} 
-                        className="flex items-center gap-2 bg-zinc-900 border border-zinc-850 p-2.5 rounded-xl transition hover:border-zinc-800"
+                        className="flex flex-col gap-2 bg-zinc-900/50 border border-zinc-850 p-3 rounded-xl transition hover:border-zinc-800"
                       >
-                        <div className="flex gap-0.5 shrink-0">
-                          <button
-                            onClick={() => moveSocialField(index, 'up')}
-                            disabled={index === 0}
-                            className="text-zinc-550 hover:text-zinc-350 p-0.5 disabled:opacity-20 cursor-pointer"
-                          >
-                            <ChevronUp className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => moveSocialField(index, 'down')}
-                            disabled={index === socialFields.length - 1}
-                            className="text-zinc-550 hover:text-zinc-350 p-0.5 disabled:opacity-20 cursor-pointer"
-                          >
-                            <ChevronDown className="w-3.5 h-3.5" />
-                          </button>
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-0.5 shrink-0">
+                            <button
+                              onClick={() => moveSocialField(index, 'up')}
+                              disabled={index === 0}
+                              className="text-zinc-550 hover:text-zinc-350 p-0.5 disabled:opacity-20 cursor-pointer"
+                              type="button"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => moveSocialField(index, 'down')}
+                              disabled={index === socialFields.length - 1}
+                              className="text-zinc-550 hover:text-zinc-350 p-0.5 disabled:opacity-20 cursor-pointer"
+                              type="button"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="w-24 text-[10px] font-black uppercase text-zinc-400 truncate shrink-0">
+                            {field.field === 'custom' ? (
+                              <input 
+                                type="text"
+                                value={field.label}
+                                onChange={e => updateSocialFieldLabel(field.id, e.target.value)}
+                                className="w-full bg-transparent border-b border-zinc-800 outline-none text-[10px] font-black uppercase text-indigo-400 focus:border-indigo-500"
+                              />
+                            ) : (
+                              field.label
+                            )}
+                          </div>
+
+                          <div className="flex-1"></div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              onClick={() => toggleSocialFieldHide(field.id)}
+                              className="text-zinc-550 hover:text-zinc-350 p-1 cursor-pointer"
+                              title={field.hidden ? "Show on Resume" : "Hide from Resume"}
+                              type="button"
+                            >
+                              {field.hidden ? <EyeOff className="w-3.5 h-3.5 text-rose-500" /> : <Eye className="w-3.5 h-3.5 text-emerald-500" />}
+                            </button>
+                            <button
+                              onClick={() => removeSocialField(field.id)}
+                              className="text-rose-500 hover:text-rose-400 p-1 cursor-pointer"
+                              title="Remove field"
+                              type="button"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
 
-                        <div className="w-24 text-[10px] font-black uppercase text-zinc-400 truncate shrink-0">
-                          {field.field === 'custom' ? (
-                            <input 
-                              type="text"
-                              value={field.label}
-                              onChange={e => updateSocialFieldLabel(field.id, e.target.value)}
-                              className="w-full bg-transparent border-b border-zinc-800 outline-none text-[10px] font-black uppercase text-indigo-400 focus:border-indigo-500"
-                            />
+                        <div className="w-full">
+                          {isLink ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[8.5px] font-black text-zinc-550 uppercase mb-1">Display Text</label>
+                                <input 
+                                  type="text"
+                                  placeholder="e.g. My Website"
+                                  value={field.value}
+                                  onChange={e => updateSocialFieldVal(field.id, e.target.value)}
+                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg p-1.5 text-zinc-300 outline-none focus:border-indigo-500 text-[10.5px]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[8.5px] font-black text-zinc-550 uppercase mb-1">Link URL</label>
+                                <input 
+                                  type="text"
+                                  placeholder={matchedCfg?.placeholder || "e.g. website.com"}
+                                  value={field.linkUrl || ''}
+                                  onChange={e => updateSocialFieldLinkUrl(field.id, e.target.value)}
+                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg p-1.5 text-zinc-300 outline-none focus:border-indigo-500 text-[10.5px]"
+                                />
+                              </div>
+                            </div>
                           ) : (
-                            field.label
+                            <div>
+                              <label className="block text-[8.5px] font-black text-zinc-550 uppercase mb-1">Value</label>
+                              <input 
+                                type="text"
+                                placeholder={matchedCfg?.placeholder || 'e.g. details'}
+                                value={field.value}
+                                onChange={e => updateSocialFieldVal(field.id, e.target.value)}
+                                className="w-full bg-zinc-950 border border-zinc-850 rounded-lg p-1.5 text-zinc-300 outline-none focus:border-indigo-500 text-[10.5px]"
+                              />
+                            </div>
                           )}
-                        </div>
-
-                        <input 
-                          type="text"
-                          placeholder={matchedCfg?.placeholder || 'e.g. details'}
-                          value={field.value}
-                          onChange={e => updateSocialFieldVal(field.id, e.target.value)}
-                          className="flex-1 bg-zinc-950 border border-zinc-850 rounded-lg p-1.5 text-zinc-300 outline-none focus:border-indigo-500 text-[10.5px]"
-                        />
-
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            onClick={() => toggleSocialFieldHide(field.id)}
-                            className="text-zinc-550 hover:text-zinc-350 p-1 cursor-pointer"
-                            title={field.hidden ? "Show on Resume" : "Hide from Resume"}
-                          >
-                            {field.hidden ? <EyeOff className="w-3.5 h-3.5 text-rose-500" /> : <Eye className="w-3.5 h-3.5 text-emerald-500" />}
-                          </button>
-                          <button
-                            onClick={() => removeSocialField(field.id)}
-                            className="text-rose-500 hover:text-rose-400 p-1 cursor-pointer"
-                            title="Remove field"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
                         </div>
                       </div>
                     );
