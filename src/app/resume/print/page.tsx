@@ -63,6 +63,8 @@ export default function ResumePrintPage() {
             padding: 0 !important;
           }
           #resume-print-canvas {
+            min-height: 0 !important;
+            height: auto !important;
             border: none !important;
             box-shadow: none !important;
             margin: 0 !important;

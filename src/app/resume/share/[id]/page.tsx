@@ -115,6 +115,14 @@ export default function ResumeSharePage() {
             margin: 0 !important;
             padding: 0 !important;
           }
+          #resume-print-canvas {
+            min-height: 0 !important;
+            height: auto !important;
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+          }
         }
       ` }} />
 
