@@ -244,10 +244,6 @@ export const ResumeStudio: React.FC = () => {
         <div className="space-y-6 animate-fade-in max-h-[calc(100vh-140px)] overflow-y-auto pr-2 scrollbar-thin">
           <div className="flex flex-col text-left">
             <h2 className="text-2xl font-black text-white tracking-tight">My Resumes</h2>
-            <p className="text-xs text-zinc-500 font-bold mt-1">
-              Your first resume is free forever. Need more than one resume?{' '}
-              <span className="underline hover:text-indigo-400 cursor-pointer">Upgrade your plan</span>
-            </p>
           </div>
 
           <div className="flex flex-wrap gap-6 justify-start pb-6">
@@ -405,46 +401,101 @@ export const ResumeStudio: React.FC = () => {
         /* EDITOR WORKSPACE VIEW */
         <div className="space-y-4 animate-fade-in">
           {/* Editor Header Bar (Dark styling) */}
-          <div className="flex flex-wrap items-center bg-zinc-900 border border-zinc-850 px-4 py-3.5 rounded-2xl text-white gap-3 shadow-sm">
-            {/* Far Left: Overview */}
-            <button
-              onClick={() => setViewMode('dashboard')}
-              className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950 hover:bg-zinc-850 border border-zinc-800 rounded-xl text-zinc-300 text-xs font-black uppercase tracking-wider transition cursor-pointer select-none"
-            >
-              <Grid className="w-3.5 h-3.5 text-zinc-550" />
-              <span>Overview</span>
-            </button>
+          <div className="flex flex-wrap items-center bg-zinc-900 border border-zinc-850 px-3 py-2 rounded-2xl text-white gap-2.5 shadow-sm justify-between">
+            {/* Left side: Overview & Tabs */}
+            <div className="flex items-center gap-2.5">
+              {/* Overview */}
+              <button
+                onClick={() => setViewMode('dashboard')}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950 hover:bg-zinc-850 border border-zinc-800 rounded-xl text-zinc-300 text-xs font-black uppercase tracking-wider transition cursor-pointer select-none"
+              >
+                <Grid className="w-3.5 h-3.5 text-zinc-550" />
+                <span>Overview</span>
+              </button>
 
-            <div className="h-5 w-px bg-zinc-800 hidden sm:block" />
+              <div className="h-5 w-px bg-zinc-800" />
 
-            {/* Middle: Content, Customize, AI Tools tabs */}
-            <div className="flex items-center gap-1 bg-zinc-950/60 p-1 rounded-xl border border-zinc-850 shadow-inner w-fit">
-              {[
-                { id: 'content', label: 'Content System', icon: FileText },
-                { id: 'customize', label: 'Customization', icon: Sparkles },
-                { id: 'ai-tools', label: 'AI Copilot', icon: Compass }
-              ].map(sub => {
-                const SubIcon = sub.icon;
-                const isSubActive = resumeSubTab === sub.id;
-                return (
-                  <button
-                    key={sub.id}
-                    onClick={() => setResumeSubTab(sub.id as any)}
-                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-black uppercase transition whitespace-nowrap cursor-pointer ${
-                      isSubActive ? 'bg-indigo-650 text-white shadow' : 'text-zinc-500 hover:text-zinc-350'
-                    }`}
-                  >
-                    <SubIcon className="w-3.5 h-3.5" />
-                    <span>{sub.label}</span>
-                  </button>
-                );
-              })}
+              {/* Tabs */}
+              <div className="flex items-center gap-1 bg-zinc-955/60 p-1 rounded-xl border border-zinc-850 shadow-inner w-fit">
+                {[
+                  { id: 'content', label: 'Content System', icon: FileText },
+                  { id: 'customize', label: 'Customization', icon: Sparkles },
+                  { id: 'ai-tools', label: 'AI Copilot', icon: Compass }
+                ].map(sub => {
+                  const SubIcon = sub.icon;
+                  const isSubActive = resumeSubTab === sub.id;
+                  return (
+                    <button
+                      key={sub.id}
+                      onClick={() => setResumeSubTab(sub.id as any)}
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-black uppercase transition whitespace-nowrap cursor-pointer ${
+                        isSubActive ? 'bg-indigo-650 text-white shadow' : 'text-zinc-500 hover:text-zinc-350'
+                      }`}
+                    >
+                      <SubIcon className="w-3.5 h-3.5" />
+                      <span>{sub.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="h-5 w-px bg-zinc-800 hidden md:block" />
+            {/* Middle: Undo, Redo, Zoom, Mobile View */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-zinc-950/40 p-0.5 rounded-xl border border-zinc-850">
+                <button
+                  onClick={handleUndo}
+                  disabled={historyIndex <= 0}
+                  className="p-1.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-400 disabled:opacity-30 rounded-lg cursor-pointer transition"
+                  title="Undo (Ctrl+Z)"
+                >
+                  <Undo2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={handleRedo}
+                  disabled={historyIndex >= history.length - 1}
+                  className="p-1.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-400 disabled:opacity-30 rounded-lg cursor-pointer transition"
+                  title="Redo (Ctrl+Y)"
+                >
+                  <Redo2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="h-5 w-px bg-zinc-800" />
+
+              {/* Zoom */}
+              <div className="flex items-center gap-1.5 bg-zinc-950/40 px-2 py-1 rounded-xl border border-zinc-850 text-[10px] text-zinc-450">
+                <span className="text-zinc-550 font-black text-[9px] uppercase tracking-wider">Zoom:</span>
+                <select
+                  value={zoom}
+                  onChange={e => setZoom(parseFloat(e.target.value))}
+                  className="bg-transparent border-none text-[10px] text-zinc-400 outline-none font-bold cursor-pointer"
+                >
+                  <option value={0.5}>50%</option>
+                  <option value={0.75}>75%</option>
+                  <option value={0.85}>85%</option>
+                  <option value={1.0}>100%</option>
+                  <option value={1.25}>125%</option>
+                  <option value={1.5}>150%</option>
+                </select>
+              </div>
+
+              <div className="h-5 w-px bg-zinc-800" />
+
+              {/* Device Toggle */}
+              <button
+                onClick={() => setIsMobileView(!isMobileView)}
+                className={`p-1.5 border rounded-lg cursor-pointer transition ${
+                  isMobileView ? 'bg-indigo-650 border-indigo-600 text-white' : 'bg-zinc-950 border-zinc-850 text-zinc-450 hover:text-zinc-250'
+                }`}
+                title={isMobileView ? 'Web View' : 'Mobile View'}
+              >
+                {isMobileView ? <Monitor className="w-3.5 h-3.5" /> : <Smartphone className="w-3.5 h-3.5" />}
+              </button>
+            </div>
 
             {/* Right Side: Version selector, download, ellipsis */}
-            <div className="ml-auto flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               {/* Version dropdown */}
               <select
                 value={selectedResumeId}
@@ -481,7 +532,7 @@ export const ResumeStudio: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => setActiveDropdownId(activeDropdownId === 'editor-menu' ? null : 'editor-menu')}
-                  className="p-2 bg-zinc-950 hover:bg-zinc-850 border border-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-xl cursor-pointer transition flex items-center justify-center"
+                  className="p-1.5 bg-zinc-955 hover:bg-zinc-850 border border-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-lg cursor-pointer transition flex items-center justify-center"
                 >
                   <MoreVertical className="w-4 h-4" />
                 </button>
@@ -575,63 +626,8 @@ export const ResumeStudio: React.FC = () => {
                   onUpdateResume={(updates) => updateResume(activeResume.id, updates)} 
                 />
               )}
-            </div>
-
-            {/* RIGHT WORKSPACE (col-span-7): Document Sheet Live Preview */}
+            </div>            {/* RIGHT WORKSPACE (col-span-7): Document Sheet Live Preview */}
             <div className="xl:col-span-7 space-y-4 overflow-y-auto xl:h-[calc(100vh-185px)] pr-1 scrollbar-thin">
-              {/* Floating Controls Toolbar */}
-              <div className="flex items-center justify-between bg-zinc-900 border border-zinc-800 px-4 py-3 rounded-2xl text-xs text-white">
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={handleUndo}
-                    disabled={historyIndex <= 0}
-                    className="p-1.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-400 disabled:opacity-30 rounded-lg cursor-pointer transition"
-                    title="Undo (Ctrl+Z)"
-                  >
-                    <Undo2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={handleRedo}
-                    disabled={historyIndex >= history.length - 1}
-                    className="p-1.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-400 disabled:opacity-30 rounded-lg cursor-pointer transition"
-                    title="Redo (Ctrl+Y)"
-                  >
-                    <Redo2 className="w-3.5 h-3.5" />
-                  </button>
-                  
-                  <div className="w-px h-6 bg-zinc-855 mx-1.5" />
-                  
-                  {/* Zoom Dropdown Selector */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-zinc-550 font-black text-[9px] uppercase tracking-wider">Zoom:</span>
-                    <select
-                      value={zoom}
-                      onChange={e => setZoom(parseFloat(e.target.value))}
-                      className="bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-450 rounded p-1 outline-none font-bold"
-                    >
-                      <option value={0.5}>50%</option>
-                      <option value={0.75}>75%</option>
-                      <option value={0.85}>85%</option>
-                      <option value={1.0}>100%</option>
-                      <option value={1.25}>125%</option>
-                      <option value={1.5}>150%</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsMobileView(!isMobileView)}
-                    className={`p-1.5 border rounded-lg cursor-pointer transition ${
-                      isMobileView ? 'bg-indigo-650 border-indigo-600 text-white' : 'bg-zinc-950 border-zinc-850 text-zinc-450 hover:text-zinc-250'
-                    }`}
-                    title={isMobileView ? 'Web View' : 'Mobile View'}
-                  >
-                    {isMobileView ? <Monitor className="w-3.5 h-3.5" /> : <Smartphone className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
               {/* Document Preview Canvas Wrapper */}
               <div className={`${isMobileView ? 'max-w-[320px] mx-auto border-8 border-zinc-850 rounded-[32px] overflow-hidden shadow-2xl' : ''}`}>
                 <div className="relative group bg-zinc-950 p-2.5 rounded-2xl border border-zinc-850 shadow-inner overflow-x-auto min-h-[500px]">
