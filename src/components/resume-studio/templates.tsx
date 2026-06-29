@@ -173,23 +173,43 @@ export const TemplateRenderer: React.FC<TemplateRenderProps> = ({
   // Render photo block
   const renderPhotoBlock = () => {
     if (!activeResume.showPhoto || !activeResume.personalPhoto) return null;
-    const isCircle = activeResume.photoStyle === 'circle';
-    const isRounded = activeResume.photoStyle === 'rounded';
+    const style = activeResume.photoStyle || 'circle';
     const size = activeResume.photoSize || 80;
+    
+    let width = size;
+    let height = size;
+    let borderRadius = '0px';
+    
+    if (style === 'circle') {
+      borderRadius = '50%';
+    } else if (style === 'rounded') {
+      borderRadius = '16px';
+    } else if (style === 'portrait') {
+      height = Math.round(size * 1.25);
+      borderRadius = '8px';
+    } else if (style === 'landscape') {
+      width = Math.round(size * 1.25);
+      borderRadius = '8px';
+    } else { // square
+      borderRadius = '4px';
+    }
     
     return (
       <div 
-        className="border border-zinc-200 overflow-hidden shadow-xs mx-auto sm:mx-0 shrink-0 select-none print:shadow-none"
+        className="border border-zinc-200 overflow-hidden shadow-xs mx-auto sm:mx-0 shrink-0 select-none print:shadow-none bg-zinc-950 flex items-center justify-center"
         style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          borderRadius: isCircle ? '50%' : isRounded ? '16px' : '0px',
+          width: `${width}px`,
+          height: `${height}px`,
+          borderRadius,
         }}
       >
         <img 
           src={activeResume.personalPhoto} 
           alt="Profile" 
           className="w-full h-full object-cover" 
+          style={{
+            transform: `scale(${activeResume.photoZoom || 1})`
+          }}
         />
       </div>
     );

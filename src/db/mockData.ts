@@ -200,7 +200,8 @@ export interface ResumeVersion {
   footerCustomText?: string;
   // Expanded sections & controls
   showPhoto?: boolean;
-  photoStyle?: 'circle' | 'square' | 'rounded';
+  photoStyle?: 'circle' | 'square' | 'rounded' | 'portrait' | 'landscape';
+  photoZoom?: number;
   photoSize?: number;
   certificationsList?: { id: string; name: string; issuer: string; date: string; credentialId: string; hidden?: boolean }[];
   achievementsList?: { id: string; title: string; description: string; hidden?: boolean }[];

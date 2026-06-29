@@ -159,6 +159,20 @@ export const EditorContent: React.FC<EditorContentProps> = ({
   const [showMorePersonal, setShowMorePersonal] = useState(false);
   const [showMoreSocial, setShowMoreSocial] = useState(false);
 
+  // Manage Photo Modal state
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [tempPhoto, setTempPhoto] = useState(activeResume.personalPhoto || '');
+  const [tempZoom, setTempZoom] = useState(activeResume.photoZoom || 1);
+  const [tempStyle, setTempStyle] = useState(activeResume.photoStyle || 'circle');
+
+  useEffect(() => {
+    if (isPhotoModalOpen) {
+      setTempPhoto(activeResume.personalPhoto || '');
+      setTempZoom(activeResume.photoZoom || 1);
+      setTempStyle(activeResume.photoStyle || 'circle');
+    }
+  }, [isPhotoModalOpen, activeResume.personalPhoto, activeResume.photoZoom, activeResume.photoStyle]);
+
   const getEditorFieldValue = (field: string) => {
     const val = activeResume[field as keyof ResumeVersion];
     if (val !== undefined) return val as string;
@@ -692,8 +706,8 @@ export const EditorContent: React.FC<EditorContentProps> = ({
 
   return (
     <div className="space-y-6">
-         {/* 1. PERSONAL DETAILS CARD */}
-      {!expandedSections.personal ? (
+      {/* 1. PERSONAL DETAILS CARD */}
+       {!expandedSections.personal ? (
         <div className="bg-zinc-950 border border-zinc-850 rounded-xl p-5 shadow-sm relative group hover:border-zinc-800 transition">
           {/* Edit pencil button top right */}
           <button
@@ -720,31 +734,23 @@ export const EditorContent: React.FC<EditorContentProps> = ({
 
               {/* Active contact channels list */}
               {socialFields.filter(f => !f.hidden && f.value?.trim()).length > 0 ? (
-                <div className="flex flex-wrap gap-x-4 gap-y-2 text-[10.5px] text-zinc-400 font-medium">
+                <div className="space-y-1.5 text-[11px] text-zinc-400 font-medium mt-2 text-left">
                   {socialFields
                     .filter(f => !f.hidden && f.value?.trim())
+                    .slice(0, 3)
                     .map(field => {
                       const getCollapsedFieldIcon = (fieldKey: string) => {
                         switch (fieldKey) {
-                          case 'email': return <Mail className="w-3.5 h-3.5 text-indigo-400 shrink-0" />;
-                          case 'phone': return <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
-                          case 'location': return <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />;
-                          case 'linkedin': return <FaLinkedin className="w-3.5 h-3.5 text-blue-400 shrink-0" />;
-                          case 'github': return <FaGithub className="w-3.5 h-3.5 text-zinc-300 shrink-0" />;
-                          case 'website':
-                          case 'portfolio':
-                            return <Globe className="w-3.5 h-3.5 text-teal-400 shrink-0" />;
-                          case 'nationality': return <Flag className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
-                          case 'dob': return <Calendar className="w-3.5 h-3.5 text-purple-400 shrink-0" />;
-                          case 'visa': return <Shield className="w-3.5 h-3.5 text-green-400 shrink-0" />;
-                          case 'availability': return <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />;
+                          case 'email': return <Mail className="w-3.5 h-3.5 text-zinc-400 shrink-0" />;
+                          case 'phone': return <Phone className="w-3.5 h-3.5 text-zinc-400 shrink-0" />;
+                          case 'location': return <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0" />;
                           default: return <Info className="w-3.5 h-3.5 text-zinc-400 shrink-0" />;
                         }
                       };
                       return (
-                        <div key={field.id} className="flex items-center gap-1.5 bg-zinc-900/40 border border-zinc-850/60 px-2.5 py-1 rounded-lg max-w-full">
+                        <div key={field.id} className="flex items-center gap-2">
                           {getCollapsedFieldIcon(field.field)}
-                          <span className="truncate max-w-[180px]">{field.value}</span>
+                          <span className="truncate max-w-[200px]">{field.value}</span>
                         </div>
                       );
                     })}
@@ -757,14 +763,22 @@ export const EditorContent: React.FC<EditorContentProps> = ({
             {/* Right side: Photo */}
             {activeResume.personalPhoto && activeResume.showPhoto !== false && (
               <div 
-                className="w-14 h-14 border border-zinc-800 bg-zinc-950 overflow-hidden shrink-0"
-                style={{ borderRadius: activeResume.photoStyle === 'circle' ? '50%' : activeResume.photoStyle === 'rounded' ? '8px' : '0px' }}
+                onClick={(e) => { e.stopPropagation(); setIsPhotoModalOpen(true); }}
+                className="w-16 h-20 border border-zinc-800 bg-zinc-950 overflow-hidden shrink-0 cursor-pointer hover:border-zinc-500 transition relative group flex items-center justify-center"
+                style={{
+                  borderRadius: activeResume.photoStyle === 'circle' ? '50%' : activeResume.photoStyle === 'rounded' ? '12px' : activeResume.photoStyle === 'portrait' || activeResume.photoStyle === 'landscape' ? '8px' : '0px',
+                  aspectRatio: activeResume.photoStyle === 'portrait' ? '3/4' : activeResume.photoStyle === 'landscape' ? '4/3' : '1/1'
+                }}
               >
                 <img 
                   src={activeResume.personalPhoto} 
                   alt="Preview" 
                   className="w-full h-full object-cover pointer-events-none select-none"
+                  style={{ transform: `scale(${activeResume.photoZoom || 1})` }}
                 />
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-150">
+                  <Pencil className="w-3.5 h-3.5 text-white" />
+                </div>
               </div>
             )}
           </div>
@@ -815,16 +829,25 @@ export const EditorContent: React.FC<EditorContentProps> = ({
               <label className="text-zinc-450 font-black block text-[9px] uppercase tracking-wider absolute top-2 left-3">Photo</label>
               
               <div 
-                onClick={() => fileInputRef.current?.click()}
-                className="w-16 h-16 border border-zinc-800 bg-zinc-950 hover:border-zinc-700 flex items-center justify-center overflow-hidden relative cursor-pointer transition-all mt-2"
-                style={{ borderRadius: activeResume.photoStyle === 'circle' ? '50%' : activeResume.photoStyle === 'rounded' ? '12px' : '0px' }}
+                onClick={() => setIsPhotoModalOpen(true)}
+                className="w-16 h-20 border border-zinc-800 bg-zinc-950 hover:border-zinc-700 flex items-center justify-center overflow-hidden relative cursor-pointer transition-all mt-2 group"
+                style={{
+                  borderRadius: activeResume.photoStyle === 'circle' ? '50%' : activeResume.photoStyle === 'rounded' ? '12px' : activeResume.photoStyle === 'portrait' || activeResume.photoStyle === 'landscape' ? '8px' : '0px',
+                  aspectRatio: activeResume.photoStyle === 'portrait' ? '3/4' : activeResume.photoStyle === 'landscape' ? '4/3' : '1/1'
+                }}
               >
                 {activeResume.personalPhoto ? (
-                  <img 
-                    src={activeResume.personalPhoto} 
-                    alt="Preview" 
-                    className="w-full h-full object-cover pointer-events-none select-none"
-                  />
+                  <>
+                    <img 
+                      src={activeResume.personalPhoto} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover pointer-events-none select-none"
+                      style={{ transform: `scale(${activeResume.photoZoom || 1})` }}
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-150">
+                      <Pencil className="w-3.5 h-3.5 text-white" />
+                    </div>
+                  </>
                 ) : (
                   <Image className="w-5 h-5 text-zinc-650" />
                 )}
@@ -832,19 +855,11 @@ export const EditorContent: React.FC<EditorContentProps> = ({
 
               <div className="flex gap-1.5">
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => setIsPhotoModalOpen(true)}
                   className="bg-zinc-950 border border-zinc-800 hover:border-zinc-750 text-[9px] font-black uppercase tracking-wider text-zinc-350 px-2 py-1 rounded transition cursor-pointer"
                 >
-                  {activeResume.personalPhoto ? 'Replace' : 'Upload'}
+                  Manage Photo
                 </button>
-                {activeResume.personalPhoto && (
-                  <button
-                    onClick={() => onUpdateResume({ personalPhoto: '' })}
-                    className="bg-zinc-950 border border-transparent text-[9px] font-black uppercase tracking-wider text-rose-500 px-2 py-1 rounded hover:bg-rose-955/20 transition cursor-pointer"
-                  >
-                    Delete
-                  </button>
-                )}
               </div>
               <input 
                 type="file" 
@@ -2795,6 +2810,142 @@ export const EditorContent: React.FC<EditorContentProps> = ({
           setExpandedSections(prev => ({ ...prev, [sectionId]: true }));
         }}
       />
+
+      {/* MANAGE PHOTO MODAL */}
+      {isPhotoModalOpen && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/70 backdrop-blur-[2px] animate-fade-in p-4 text-left">
+          <div className="bg-white border border-zinc-200 rounded-3xl p-6 w-full max-w-xl shadow-2xl relative space-y-5 text-zinc-800">
+            {/* Header */}
+            <div className="flex justify-between items-center pb-3 border-b border-zinc-100">
+              <h3 className="text-sm font-black uppercase text-[#1a1c3d] tracking-widest mx-auto">Manage Photo</h3>
+              <button 
+                onClick={() => setIsPhotoModalOpen(false)} 
+                className="absolute top-4 right-4 p-1.5 hover:bg-zinc-100 border border-zinc-200 rounded-full cursor-pointer transition text-zinc-550 flex items-center justify-center"
+              >
+                <Plus className="w-4 h-4 rotate-45" />
+              </button>
+            </div>
+
+            {/* Photo Crop Window Container */}
+            <div className="h-64 bg-black rounded-xl flex items-center justify-center overflow-hidden relative">
+              {tempPhoto ? (
+                <div 
+                  className={`overflow-hidden border border-zinc-600/40 relative shadow-inner bg-zinc-950 flex items-center justify-center`}
+                  style={{
+                    width: tempStyle === 'portrait' ? '140px' : tempStyle === 'landscape' ? '210px' : '180px',
+                    height: tempStyle === 'portrait' ? '190px' : tempStyle === 'landscape' ? '160px' : '180px',
+                    borderRadius: tempStyle === 'circle' ? '50%' : tempStyle === 'rounded' ? '24px' : '0px'
+                  }}
+                >
+                  <img 
+                    src={tempPhoto} 
+                    alt="Preview Crop" 
+                    className="w-full h-full object-cover select-none pointer-events-none"
+                    style={{ transform: `scale(${tempZoom})` }}
+                  />
+                </div>
+              ) : (
+                <div className="text-zinc-500 flex flex-col items-center gap-2">
+                  <Image className="w-8 h-8 text-zinc-600 animate-pulse" />
+                  <span className="text-xs">No profile photo uploaded.</span>
+                </div>
+              )}
+            </div>
+
+            {/* Controls Row */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-5 pt-2">
+              
+              {/* Left Column: Zoom Slider & Shape Selectors */}
+              <div className="space-y-4 w-full md:w-fit">
+                {/* Zoom Slider */}
+                <div className="flex items-center gap-2.5">
+                  <Image className="w-4 h-4 text-zinc-400" />
+                  <input 
+                    type="range"
+                    min="1"
+                    max="3"
+                    step="0.05"
+                    value={tempZoom}
+                    onChange={(e) => setTempZoom(parseFloat(e.target.value))}
+                    disabled={!tempPhoto}
+                    className="w-40 accent-pink-650 bg-zinc-200 h-1.5 rounded-lg appearance-none cursor-pointer disabled:cursor-not-allowed"
+                  />
+                  <Image className="w-5 h-5 text-zinc-400" />
+                </div>
+
+                {/* Shape selectors */}
+                <div className="flex items-center gap-2.5">
+                  {[
+                    { id: 'circle', label: 'Circle', class: 'rounded-full w-7 h-7' },
+                    { id: 'rounded', label: 'Rounded Square', class: 'rounded-lg w-7 h-7' },
+                    { id: 'square', label: 'Square', class: 'rounded-sm w-7 h-7' },
+                    { id: 'portrait', label: 'Portrait', class: 'rounded-md w-6 h-8' },
+                    { id: 'landscape', label: 'Landscape', class: 'rounded-md w-8 h-6' }
+                  ].map(shape => (
+                    <button
+                      key={shape.id}
+                      onClick={() => setTempStyle(shape.id as any)}
+                      disabled={!tempPhoto}
+                      className={`border cursor-pointer transition flex items-center justify-center ${shape.class} ${
+                        tempStyle === shape.id 
+                          ? 'border-indigo-600 bg-indigo-50 shadow-sm' 
+                          : 'border-zinc-300 hover:border-zinc-400 bg-white'
+                      }`}
+                      title={shape.label}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Column: Save, Replace, Delete Buttons */}
+              <div className="flex flex-col gap-2.5 w-full md:w-48">
+                {/* Save */}
+                <button
+                  onClick={() => {
+                    onUpdateResume({
+                      personalPhoto: tempPhoto,
+                      photoZoom: tempZoom,
+                      photoStyle: tempStyle,
+                      showPhoto: true
+                    });
+                    setIsPhotoModalOpen(false);
+                  }}
+                  disabled={!tempPhoto}
+                  className="w-full bg-gradient-to-r from-pink-600 to-rose-500 hover:opacity-95 disabled:opacity-40 text-white font-extrabold text-xs uppercase tracking-wider py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed shadow-md shadow-rose-500/10 active:scale-[0.98]"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Save</span>
+                </button>
+
+                {/* Replace Photo */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-extrabold text-xs uppercase tracking-wider py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
+                >
+                  <Upload className="w-4 h-4 text-zinc-500" />
+                  <span>Replace Photo</span>
+                </button>
+
+                {/* Delete Photo */}
+                {tempPhoto && (
+                  <button
+                    onClick={() => {
+                      if (confirm("Delete profile photo?")) {
+                        setTempPhoto('');
+                        onUpdateResume({ personalPhoto: '' });
+                      }
+                    }}
+                    className="w-full bg-white hover:bg-rose-55/20 border border-rose-200 hover:border-rose-300 text-rose-600 font-extrabold text-xs uppercase tracking-wider py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
