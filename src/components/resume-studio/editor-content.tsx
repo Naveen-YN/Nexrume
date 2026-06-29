@@ -826,11 +826,11 @@ export const EditorContent: React.FC<EditorContentProps> = ({
 
             {/* Right: Photo editor */}
             <div className="sm:col-span-1 bg-zinc-900/40 border border-zinc-850 p-4 rounded-xl flex flex-col items-center justify-center space-y-2 relative">
-              <label className="text-zinc-450 font-black block text-[9px] uppercase tracking-wider absolute top-2 left-3">Photo</label>
+              <label className="text-zinc-450 font-black block text-[9px] uppercase tracking-wider absolute top-2 left-0 right-0 text-center">Photo</label>
               
               <div 
                 onClick={() => setIsPhotoModalOpen(true)}
-                className="w-16 h-20 border border-zinc-800 bg-zinc-950 hover:border-zinc-700 flex items-center justify-center overflow-hidden relative cursor-pointer transition-all mt-2 group"
+                className="w-16 h-20 border border-zinc-800 bg-zinc-950 hover:border-zinc-700 flex items-center justify-center overflow-hidden relative cursor-pointer transition-all mt-4 group animate-fade-in"
                 style={{
                   borderRadius: activeResume.photoStyle === 'circle' ? '50%' : activeResume.photoStyle === 'rounded' ? '12px' : activeResume.photoStyle === 'portrait' || activeResume.photoStyle === 'landscape' ? '8px' : '0px',
                   aspectRatio: activeResume.photoStyle === 'portrait' ? '3/4' : activeResume.photoStyle === 'landscape' ? '4/3' : '1/1'
@@ -841,25 +841,21 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                     <img 
                       src={activeResume.personalPhoto} 
                       alt="Preview" 
-                      className="w-full h-full object-cover pointer-events-none select-none"
+                      className="w-full h-full object-contain pointer-events-none select-none"
                       style={{ transform: `scale(${activeResume.photoZoom || 1})` }}
                     />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-150">
-                      <Pencil className="w-3.5 h-3.5 text-white" />
+                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-white text-center px-1">Manage Photo</span>
                     </div>
                   </>
                 ) : (
-                  <Image className="w-5 h-5 text-zinc-650" />
+                  <>
+                    <Image className="w-5 h-5 text-zinc-650" />
+                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-white text-center px-1">Add Photo</span>
+                    </div>
+                  </>
                 )}
-              </div>
-
-              <div className="flex gap-1.5">
-                <button
-                  onClick={() => setIsPhotoModalOpen(true)}
-                  className="bg-zinc-950 border border-zinc-800 hover:border-zinc-750 text-[9px] font-black uppercase tracking-wider text-zinc-350 px-2 py-1 rounded transition cursor-pointer"
-                >
-                  Manage Photo
-                </button>
               </div>
               <input 
                 type="file" 
@@ -2813,24 +2809,24 @@ export const EditorContent: React.FC<EditorContentProps> = ({
 
       {/* MANAGE PHOTO MODAL */}
       {isPhotoModalOpen && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/70 backdrop-blur-[2px] animate-fade-in p-4 text-left">
-          <div className="bg-white border border-zinc-200 rounded-3xl p-6 w-full max-w-xl shadow-2xl relative space-y-5 text-zinc-800">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-[2px] animate-fade-in p-4 text-left">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 w-full max-w-xl shadow-2xl relative space-y-5 text-zinc-200">
             {/* Header */}
-            <div className="flex justify-between items-center pb-3 border-b border-zinc-100">
-              <h3 className="text-sm font-black uppercase text-[#1a1c3d] tracking-widest mx-auto">Manage Photo</h3>
+            <div className="flex justify-between items-center pb-3 border-b border-zinc-800">
+              <h3 className="text-sm font-black uppercase text-white tracking-widest mx-auto">Manage Photo</h3>
               <button 
                 onClick={() => setIsPhotoModalOpen(false)} 
-                className="absolute top-4 right-4 p-1.5 hover:bg-zinc-100 border border-zinc-200 rounded-full cursor-pointer transition text-zinc-550 flex items-center justify-center"
+                className="absolute top-4 right-4 p-1.5 hover:bg-zinc-800 border border-zinc-800 rounded-full cursor-pointer transition text-zinc-450 flex items-center justify-center"
               >
                 <Plus className="w-4 h-4 rotate-45" />
               </button>
             </div>
 
             {/* Photo Crop Window Container */}
-            <div className="h-64 bg-black rounded-xl flex items-center justify-center overflow-hidden relative">
+            <div className="h-64 bg-zinc-950 border border-zinc-850 rounded-xl flex items-center justify-center overflow-hidden relative">
               {tempPhoto ? (
                 <div 
-                  className={`overflow-hidden border border-zinc-600/40 relative shadow-inner bg-zinc-950 flex items-center justify-center`}
+                  className={`overflow-hidden border border-zinc-800 relative shadow-inner bg-zinc-950 flex items-center justify-center`}
                   style={{
                     width: tempStyle === 'portrait' ? '140px' : tempStyle === 'landscape' ? '210px' : '180px',
                     height: tempStyle === 'portrait' ? '190px' : tempStyle === 'landscape' ? '160px' : '180px',
@@ -2840,12 +2836,12 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                   <img 
                     src={tempPhoto} 
                     alt="Preview Crop" 
-                    className="w-full h-full object-cover select-none pointer-events-none"
+                    className="w-full h-full object-contain select-none pointer-events-none"
                     style={{ transform: `scale(${tempZoom})` }}
                   />
                 </div>
               ) : (
-                <div className="text-zinc-500 flex flex-col items-center gap-2">
+                <div className="text-zinc-550 flex flex-col items-center gap-2">
                   <Image className="w-8 h-8 text-zinc-600 animate-pulse" />
                   <span className="text-xs">No profile photo uploaded.</span>
                 </div>
@@ -2859,7 +2855,7 @@ export const EditorContent: React.FC<EditorContentProps> = ({
               <div className="space-y-4 w-full md:w-fit">
                 {/* Zoom Slider */}
                 <div className="flex items-center gap-2.5">
-                  <Image className="w-4 h-4 text-zinc-400" />
+                  <Image className="w-4 h-4 text-zinc-500" />
                   <input 
                     type="range"
                     min="1"
@@ -2868,9 +2864,9 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                     value={tempZoom}
                     onChange={(e) => setTempZoom(parseFloat(e.target.value))}
                     disabled={!tempPhoto}
-                    className="w-40 accent-pink-650 bg-zinc-200 h-1.5 rounded-lg appearance-none cursor-pointer disabled:cursor-not-allowed"
+                    className="w-40 accent-pink-650 bg-zinc-800 h-1.5 rounded-lg appearance-none cursor-pointer disabled:cursor-not-allowed"
                   />
-                  <Image className="w-5 h-5 text-zinc-400" />
+                  <Image className="w-5 h-5 text-zinc-550" />
                 </div>
 
                 {/* Shape selectors */}
@@ -2888,8 +2884,8 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                       disabled={!tempPhoto}
                       className={`border cursor-pointer transition flex items-center justify-center ${shape.class} ${
                         tempStyle === shape.id 
-                          ? 'border-indigo-600 bg-indigo-50 shadow-sm' 
-                          : 'border-zinc-300 hover:border-zinc-400 bg-white'
+                          ? 'border-indigo-500 bg-indigo-950/40 shadow-sm' 
+                          : 'border-zinc-800 hover:border-zinc-700 bg-zinc-950 text-white'
                       }`}
                       title={shape.label}
                     />
@@ -2920,7 +2916,7 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                 {/* Replace Photo */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 font-extrabold text-xs uppercase tracking-wider py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
+                  className="w-full bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 text-zinc-350 font-extrabold text-xs uppercase tracking-wider py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
                 >
                   <Upload className="w-4 h-4 text-zinc-500" />
                   <span>Replace Photo</span>
@@ -2935,7 +2931,7 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                         onUpdateResume({ personalPhoto: '' });
                       }
                     }}
-                    className="w-full bg-white hover:bg-rose-55/20 border border-rose-200 hover:border-rose-300 text-rose-600 font-extrabold text-xs uppercase tracking-wider py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
+                    className="w-full bg-zinc-950 hover:bg-rose-955/20 border border-rose-955/35 text-rose-500 font-extrabold text-xs uppercase tracking-wider py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
                   >
                     <Trash2 className="w-4 h-4" />
                     <span>Delete</span>
