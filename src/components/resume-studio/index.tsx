@@ -229,7 +229,7 @@ export const ResumeStudio: React.FC = () => {
     : '';
 
   return (
-    <div className="space-y-4 relative z-10 select-none light-studio bg-[#f4f3ef] min-h-[calc(100vh-140px)] rounded-2xl p-6">
+    <div className="space-y-4 relative z-10 select-none">
       
       {/* Toast popup */}
       {toastMsg && (
@@ -243,10 +243,10 @@ export const ResumeStudio: React.FC = () => {
       {viewMode === 'dashboard' ? (
         <div className="space-y-6 animate-fade-in">
           <div className="flex flex-col text-left">
-            <h2 className="text-2xl font-black text-[#1a1c3d] tracking-tight">My Resumes</h2>
+            <h2 className="text-2xl font-black text-white tracking-tight">My Resumes</h2>
             <p className="text-xs text-zinc-500 font-bold mt-1">
               Your first resume is free forever. Need more than one resume?{' '}
-              <span className="underline hover:text-indigo-650 cursor-pointer">Upgrade your plan</span>
+              <span className="underline hover:text-indigo-400 cursor-pointer">Upgrade your plan</span>
             </p>
           </div>
 
@@ -254,12 +254,12 @@ export const ResumeStudio: React.FC = () => {
             {/* New Resume Card */}
             <div 
               onClick={handleCreateNewResume}
-              className="bg-white border-2 border-dashed border-zinc-200 hover:border-indigo-500 rounded-2xl h-80 flex flex-col items-center justify-center cursor-pointer transition duration-300 group hover:shadow-md select-none"
+              className="bg-zinc-900 border-2 border-dashed border-zinc-800 hover:border-indigo-500 rounded-2xl h-80 flex flex-col items-center justify-center cursor-pointer transition duration-300 group hover:shadow-lg select-none"
             >
-              <div className="w-12 h-12 rounded-full bg-zinc-50 flex items-center justify-center border border-zinc-150 group-hover:border-indigo-500/20 group-hover:bg-indigo-50 transition mb-3">
-                <Plus className="w-6 h-6 text-zinc-400 group-hover:text-indigo-650 transition" />
+              <div className="w-12 h-12 rounded-full bg-zinc-950 flex items-center justify-center border border-zinc-850 group-hover:border-indigo-500/20 group-hover:bg-indigo-955/20 transition mb-3">
+                <Plus className="w-6 h-6 text-zinc-500 group-hover:text-indigo-400 transition" />
               </div>
-              <span className="text-zinc-500 group-hover:text-indigo-650 font-black text-xs uppercase tracking-wider">New resume</span>
+              <span className="text-zinc-400 group-hover:text-indigo-400 font-black text-xs uppercase tracking-wider">New resume</span>
             </div>
 
             {/* Resume Cards */}
@@ -268,42 +268,42 @@ export const ResumeStudio: React.FC = () => {
               return (
                 <div 
                   key={r.id}
-                  className="bg-white border border-zinc-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col relative group h-80"
+                  className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition duration-300 flex flex-col relative group h-80"
                 >
                   {/* Top preview section with scaled Preview inside */}
-                  <div className="h-64 bg-zinc-50 border-b border-zinc-100 flex items-center justify-center relative overflow-hidden select-none">
+                  <div className="h-64 bg-zinc-950 border-b border-zinc-850 flex items-center justify-center relative overflow-hidden select-none">
                     <div className="absolute w-[800px] h-[1050px] scale-[0.22] origin-top bg-white shadow-md pointer-events-none" style={{ top: '12px' }}>
                       <Preview activeResume={r} userProfile={userProfile} zoom={1} />
                     </div>
 
                     {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-[#f4f3ef]/90 backdrop-blur-[1px] flex flex-col items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                    <div className="absolute inset-0 bg-zinc-955/90 backdrop-blur-[1px] flex flex-col items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                       <button 
                         onClick={() => { 
                           setSelectedResumeId(r.id); 
                           setHistory([]); 
                           setViewMode('editor'); 
                         }} 
-                        className="bg-[#1a1c3d] hover:bg-[#282a57] text-white text-[10px] font-black uppercase tracking-wider py-2.5 px-6 rounded-xl flex items-center gap-1.5 cursor-pointer shadow transition active:scale-[0.98]"
+                        className="bg-indigo-650 hover:bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider py-2.5 px-6 rounded-xl flex items-center gap-1.5 cursor-pointer shadow transition active:scale-[0.98]"
                       >
                         <span>View Resume</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                       <button 
                         onClick={() => duplicateSpecificResume(r)} 
-                        className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 text-[10px] font-black uppercase tracking-wider py-2.5 px-6 rounded-xl flex items-center gap-1.5 cursor-pointer transition active:scale-[0.98]"
+                        className="bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-350 text-[10px] font-black uppercase tracking-wider py-2.5 px-6 rounded-xl flex items-center gap-1.5 cursor-pointer transition active:scale-[0.98]"
                       >
-                        <Copy className="w-3.5 h-3.5 text-zinc-550" />
+                        <Copy className="w-3.5 h-3.5 text-zinc-450" />
                         <span>Duplicate</span>
                       </button>
                     </div>
                   </div>
 
                   {/* Bottom metadata */}
-                  <div className="p-3.5 flex items-center justify-between bg-white relative flex-1 min-w-0">
+                  <div className="p-3.5 flex items-center justify-between bg-zinc-900 relative flex-1 min-w-0">
                     <div className="flex-1 min-w-0 pr-6 text-left">
-                      <h4 className="font-bold text-zinc-800 text-xs truncate" title={r.name}>{r.name}</h4>
-                      <span className="text-[9px] text-zinc-400 font-bold block mt-0.5 uppercase tracking-wider truncate">
+                      <h4 className="font-bold text-white text-xs truncate" title={r.name}>{r.name}</h4>
+                      <span className="text-[9px] text-zinc-550 font-bold block mt-0.5 uppercase tracking-wider truncate">
                         edited recently • {r.template.replace('ats-', '')}
                       </span>
                     </div>
@@ -315,7 +315,7 @@ export const ResumeStudio: React.FC = () => {
                           e.stopPropagation();
                           setActiveDropdownId(isDropdownOpen ? null : r.id);
                         }}
-                        className="p-1 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/60 text-zinc-500 hover:text-zinc-750 rounded-lg cursor-pointer transition"
+                        className="p-1 bg-zinc-950 hover:bg-zinc-855 border border-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-lg cursor-pointer transition"
                       >
                         <MoreVertical className="w-3.5 h-3.5" />
                       </button>
@@ -323,7 +323,7 @@ export const ResumeStudio: React.FC = () => {
                       {isDropdownOpen && (
                         <>
                           <div className="fixed inset-0 z-30 cursor-default" onClick={(e) => { e.stopPropagation(); setActiveDropdownId(null); }} />
-                          <div className="absolute right-0 bottom-8 bg-white border border-zinc-200 rounded-xl shadow-xl z-40 p-1.5 w-40 text-[11px] font-bold text-zinc-650 space-y-0.5 text-left">
+                          <div className="absolute right-0 bottom-8 bg-zinc-955 border border-zinc-800 rounded-xl shadow-xl z-40 p-1.5 w-40 text-[11px] font-bold text-zinc-450 space-y-0.5 text-left">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -331,9 +331,9 @@ export const ResumeStudio: React.FC = () => {
                                 const newName = prompt("Rename version:", r.name);
                                 if (newName) updateResume(r.id, { name: newName });
                               }}
-                              className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                              className="w-full px-2.5 py-2 hover:bg-zinc-900 rounded-lg flex items-center gap-2 cursor-pointer transition text-zinc-400 hover:text-zinc-200"
                             >
-                              <Pencil className="w-3.5 h-3.5 text-zinc-400" />
+                              <Pencil className="w-3.5 h-3.5 text-zinc-500" />
                               <span>Edit title</span>
                             </button>
                             <button
@@ -342,9 +342,9 @@ export const ResumeStudio: React.FC = () => {
                                 setActiveDropdownId(null);
                                 duplicateSpecificResume(r);
                               }}
-                              className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                              className="w-full px-2.5 py-2 hover:bg-zinc-900 rounded-lg flex items-center gap-2 cursor-pointer transition text-zinc-400 hover:text-zinc-200"
                             >
-                              <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                              <Copy className="w-3.5 h-3.5 text-zinc-500" />
                               <span>Duplicate</span>
                             </button>
                             <button
@@ -353,12 +353,12 @@ export const ResumeStudio: React.FC = () => {
                                 setActiveDropdownId(null);
                                 alert("AI translation initiated (Beta)...");
                               }}
-                              className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                              className="w-full px-2.5 py-2 hover:bg-zinc-900 rounded-lg flex items-center gap-2 cursor-pointer transition text-zinc-400 hover:text-zinc-200"
                             >
-                              <Languages className="w-3.5 h-3.5 text-zinc-400" />
+                              <Languages className="w-3.5 h-3.5 text-zinc-500" />
                               <span className="flex items-center gap-1">
                                 <span>AI translate</span>
-                                <span className="text-[7.5px] font-black uppercase text-emerald-600 bg-emerald-50 border border-emerald-200/50 px-1 py-0.2 rounded shrink-0">Beta</span>
+                                <span className="text-[7.5px] font-black uppercase text-emerald-450 bg-emerald-955/40 border border-emerald-900/55 px-1.5 py-0.2 rounded shrink-0">Beta</span>
                               </span>
                             </button>
                             <button
@@ -367,12 +367,12 @@ export const ResumeStudio: React.FC = () => {
                                 setActiveDropdownId(null);
                                 downloadSpecificPdf(r);
                               }}
-                              className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                              className="w-full px-2.5 py-2 hover:bg-zinc-900 rounded-lg flex items-center gap-2 cursor-pointer transition text-zinc-400 hover:text-zinc-200"
                             >
-                              <Download className="w-3.5 h-3.5 text-zinc-400" />
+                              <Download className="w-3.5 h-3.5 text-zinc-500" />
                               <span>Download</span>
                             </button>
-                            <div className="h-px bg-zinc-100 my-1" />
+                            <div className="h-px bg-zinc-800 my-1" />
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -386,7 +386,7 @@ export const ResumeStudio: React.FC = () => {
                                   showToast("Version deleted");
                                 }
                               }}
-                              className="w-full px-2.5 py-2 hover:bg-rose-50 text-rose-600 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                              className="w-full px-2.5 py-2 hover:bg-rose-955/20 text-rose-500 rounded-lg flex items-center gap-2 cursor-pointer transition"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                               <span>Delete</span>
@@ -404,25 +404,25 @@ export const ResumeStudio: React.FC = () => {
       ) : (
         /* EDITOR WORKSPACE VIEW */
         <div className="space-y-4 animate-fade-in">
-          {/* Editor Header Bar (White styling) */}
-          <div className="flex flex-wrap items-center bg-white border border-zinc-200 px-4 py-3.5 rounded-2xl shadow-sm text-zinc-800 gap-3">
+          {/* Editor Header Bar (Dark styling) */}
+          <div className="flex flex-wrap items-center bg-zinc-900 border border-zinc-850 px-4 py-3.5 rounded-2xl text-white gap-3 shadow-sm">
             {/* Far Left: Overview */}
             <button
               onClick={() => setViewMode('dashboard')}
-              className="flex items-center gap-1.5 px-3 py-2 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-xl text-zinc-700 text-xs font-black uppercase tracking-wider transition cursor-pointer select-none"
+              className="flex items-center gap-1.5 px-3 py-2 bg-zinc-950 hover:bg-zinc-850 border border-zinc-800 rounded-xl text-zinc-300 text-xs font-black uppercase tracking-wider transition cursor-pointer select-none"
             >
               <Grid className="w-3.5 h-3.5 text-zinc-550" />
               <span>Overview</span>
             </button>
 
-            <div className="h-5 w-px bg-zinc-200 hidden sm:block" />
+            <div className="h-5 w-px bg-zinc-800 hidden sm:block" />
 
             {/* Middle: Content, Customize, AI Tools tabs */}
-            <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 shadow-inner w-fit">
+            <div className="flex items-center gap-1 bg-zinc-950/60 p-1 rounded-xl border border-zinc-850 shadow-inner w-fit">
               {[
-                { id: 'content', label: 'Content', icon: FileText },
-                { id: 'customize', label: 'Customize', icon: Sparkles },
-                { id: 'ai-tools', label: 'AI Tools', icon: Compass }
+                { id: 'content', label: 'Content System', icon: FileText },
+                { id: 'customize', label: 'Customization', icon: Sparkles },
+                { id: 'ai-tools', label: 'AI Copilot', icon: Compass }
               ].map(sub => {
                 const SubIcon = sub.icon;
                 const isSubActive = resumeSubTab === sub.id;
@@ -431,7 +431,7 @@ export const ResumeStudio: React.FC = () => {
                     key={sub.id}
                     onClick={() => setResumeSubTab(sub.id as any)}
                     className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-black uppercase transition whitespace-nowrap cursor-pointer ${
-                      isSubActive ? 'bg-[#1a1c3d] text-white shadow' : 'text-zinc-500 hover:text-zinc-800'
+                      isSubActive ? 'bg-indigo-650 text-white shadow' : 'text-zinc-500 hover:text-zinc-350'
                     }`}
                   >
                     <SubIcon className="w-3.5 h-3.5" />
@@ -441,7 +441,7 @@ export const ResumeStudio: React.FC = () => {
               })}
             </div>
 
-            <div className="h-5 w-px bg-zinc-200 hidden md:block" />
+            <div className="h-5 w-px bg-zinc-800 hidden md:block" />
 
             {/* Right Side: Version selector, download, ellipsis */}
             <div className="ml-auto flex items-center gap-3">
@@ -449,7 +449,7 @@ export const ResumeStudio: React.FC = () => {
               <select
                 value={selectedResumeId}
                 onChange={e => { setSelectedResumeId(e.target.value); setHistory([]); }}
-                className="bg-zinc-50 border border-zinc-200 text-[11px] font-black text-zinc-750 rounded-xl px-3 py-2 outline-none cursor-pointer focus:border-indigo-500"
+                className="bg-zinc-950 border border-zinc-800 text-[11px] font-black text-zinc-300 rounded-xl px-3 py-2 outline-none cursor-pointer focus:border-indigo-500"
               >
                 {resumes.map(r => (
                   <option key={r.id} value={r.id}>
@@ -462,7 +462,7 @@ export const ResumeStudio: React.FC = () => {
               <button
                 onClick={() => downloadSpecificPdf(activeResume)}
                 disabled={isDownloadingPdf}
-                className="flex items-center gap-1.5 py-2 px-4.5 rounded-xl bg-[#1a1c3d] hover:bg-[#282a57] disabled:bg-zinc-250 text-white text-[11px] font-black uppercase tracking-wider transition cursor-pointer disabled:cursor-not-allowed select-none shadow-sm active:scale-[0.98]"
+                className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-indigo-650 hover:bg-indigo-600 disabled:bg-zinc-800 text-white text-[10px] font-bold transition cursor-pointer disabled:cursor-not-allowed select-none shadow-sm active:scale-[0.98]"
               >
                 {isDownloadingPdf ? (
                   <>
@@ -472,7 +472,7 @@ export const ResumeStudio: React.FC = () => {
                 ) : (
                   <>
                     <Download className="w-3.5 h-3.5" />
-                    <span>Download</span>
+                    <span>Download PDF</span>
                   </>
                 )}
               </button>
@@ -481,7 +481,7 @@ export const ResumeStudio: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => setActiveDropdownId(activeDropdownId === 'editor-menu' ? null : 'editor-menu')}
-                  className="p-2 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-zinc-750 rounded-xl cursor-pointer transition flex items-center justify-center"
+                  className="p-2 bg-zinc-955 hover:bg-zinc-850 border border-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-xl cursor-pointer transition flex items-center justify-center"
                 >
                   <MoreVertical className="w-4 h-4" />
                 </button>
@@ -489,16 +489,16 @@ export const ResumeStudio: React.FC = () => {
                 {activeDropdownId === 'editor-menu' && (
                   <>
                     <div className="fixed inset-0 z-30 cursor-default" onClick={() => setActiveDropdownId(null)} />
-                    <div className="absolute right-0 mt-2 bg-white border border-zinc-200 rounded-xl shadow-xl z-40 p-1.5 w-44 text-[11px] font-bold text-zinc-650 space-y-0.5 text-left">
+                    <div className="absolute right-0 mt-2 bg-zinc-955 border border-zinc-800 rounded-xl shadow-xl z-40 p-1.5 w-44 text-[11px] font-bold text-zinc-450 space-y-0.5 text-left">
                       <button
                         onClick={() => {
                           setActiveDropdownId(null);
                           const newName = prompt("Rename version:", activeResume.name);
                           if (newName) updateResume(activeResume.id, { name: newName });
                         }}
-                        className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                        className="w-full px-2.5 py-2 hover:bg-zinc-900 rounded-lg flex items-center gap-2 cursor-pointer transition text-zinc-400 hover:text-zinc-200"
                       >
-                        <Pencil className="w-3.5 h-3.5 text-zinc-400" />
+                        <Pencil className="w-3.5 h-3.5 text-zinc-500" />
                         <span>Rename version</span>
                       </button>
                       <button
@@ -506,9 +506,9 @@ export const ResumeStudio: React.FC = () => {
                           setActiveDropdownId(null);
                           handleDuplicateResume();
                         }}
-                        className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                        className="w-full px-2.5 py-2 hover:bg-zinc-900 rounded-lg flex items-center gap-2 cursor-pointer transition text-zinc-400 hover:text-zinc-200"
                       >
-                        <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                        <Copy className="w-3.5 h-3.5 text-zinc-500" />
                         <span>Duplicate version</span>
                       </button>
                       <button
@@ -516,12 +516,12 @@ export const ResumeStudio: React.FC = () => {
                           setActiveDropdownId(null);
                           setIsComparing(true);
                         }}
-                        className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                        className="w-full px-2.5 py-2 hover:bg-zinc-900 rounded-lg flex items-center gap-2 cursor-pointer transition text-zinc-400 hover:text-zinc-200"
                       >
-                        <Columns className="w-3.5 h-3.5 text-zinc-400" />
+                        <Columns className="w-3.5 h-3.5 text-zinc-500" />
                         <span>Compare versions</span>
                       </button>
-                      <div className="h-px bg-zinc-100 my-1" />
+                      <div className="h-px bg-zinc-800 my-1" />
                       <button
                         onClick={() => {
                           setActiveDropdownId(null);
@@ -536,7 +536,7 @@ export const ResumeStudio: React.FC = () => {
                             showToast("Version deleted");
                           }
                         }}
-                        className="w-full px-2.5 py-2 hover:bg-rose-50 text-rose-600 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                        className="w-full px-2.5 py-2 hover:bg-rose-955/20 text-rose-500 rounded-lg flex items-center gap-2 cursor-pointer transition"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Delete version</span>
@@ -552,7 +552,7 @@ export const ResumeStudio: React.FC = () => {
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
             
             {/* LEFT WORKSPACE (col-span-5): Form editor and controls */}
-            <div className="xl:col-span-5 bg-white border border-zinc-200 rounded-2xl p-5 space-y-5 overflow-y-auto xl:h-[calc(100vh-185px)] scrollbar-thin shadow-sm text-zinc-800 editor-container-card">
+            <div className="xl:col-span-5 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-5 overflow-y-auto xl:h-[calc(100vh-185px)] scrollbar-thin">
               {/* Sub-tab Rendering */}
               {resumeSubTab === 'content' && (
                 <EditorContent 
@@ -580,12 +580,12 @@ export const ResumeStudio: React.FC = () => {
             {/* RIGHT WORKSPACE (col-span-7): Document Sheet Live Preview */}
             <div className="xl:col-span-7 space-y-4 overflow-y-auto xl:h-[calc(100vh-185px)] pr-1 scrollbar-thin">
               {/* Floating Controls Toolbar */}
-              <div className="flex items-center justify-between bg-white border border-zinc-200 px-4 py-3 rounded-2xl text-xs text-zinc-800 shadow-sm">
+              <div className="flex items-center justify-between bg-zinc-900 border border-zinc-800 px-4 py-3 rounded-2xl text-xs text-white">
                 <div className="flex items-center gap-1">
                   <button
                     onClick={handleUndo}
                     disabled={historyIndex <= 0}
-                    className="p-1.5 bg-zinc-50 border border-zinc-200 hover:border-zinc-350 text-zinc-500 disabled:opacity-30 rounded-lg cursor-pointer transition"
+                    className="p-1.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-400 disabled:opacity-30 rounded-lg cursor-pointer transition"
                     title="Undo (Ctrl+Z)"
                   >
                     <Undo2 className="w-3.5 h-3.5" />
@@ -593,21 +593,21 @@ export const ResumeStudio: React.FC = () => {
                   <button
                     onClick={handleRedo}
                     disabled={historyIndex >= history.length - 1}
-                    className="p-1.5 bg-zinc-50 border border-zinc-200 hover:border-zinc-350 text-zinc-500 disabled:opacity-30 rounded-lg cursor-pointer transition"
+                    className="p-1.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-400 disabled:opacity-30 rounded-lg cursor-pointer transition"
                     title="Redo (Ctrl+Y)"
                   >
                     <Redo2 className="w-3.5 h-3.5" />
                   </button>
                   
-                  <div className="w-px h-6 bg-zinc-200 mx-1.5" />
+                  <div className="w-px h-6 bg-zinc-855 mx-1.5" />
                   
                   {/* Zoom Dropdown Selector */}
                   <div className="flex items-center gap-1.5">
-                    <span className="text-zinc-500 font-black text-[9px] uppercase tracking-wider">Zoom:</span>
+                    <span className="text-zinc-550 font-black text-[9px] uppercase tracking-wider">Zoom:</span>
                     <select
                       value={zoom}
                       onChange={e => setZoom(parseFloat(e.target.value))}
-                      className="bg-zinc-50 border border-zinc-200 text-[10px] text-zinc-500 rounded p-1 outline-none font-bold cursor-pointer"
+                      className="bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-450 rounded p-1 outline-none font-bold"
                     >
                       <option value={0.5}>50%</option>
                       <option value={0.75}>75%</option>
@@ -623,7 +623,7 @@ export const ResumeStudio: React.FC = () => {
                   <button
                     onClick={() => setIsMobileView(!isMobileView)}
                     className={`p-1.5 border rounded-lg cursor-pointer transition ${
-                      isMobileView ? 'bg-[#1a1c3d] border-[#1a1c3d] text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:text-zinc-800'
+                      isMobileView ? 'bg-indigo-650 border-indigo-600 text-white' : 'bg-zinc-955 border-zinc-850 text-zinc-450 hover:text-zinc-250'
                     }`}
                     title={isMobileView ? 'Web View' : 'Mobile View'}
                   >
@@ -633,8 +633,8 @@ export const ResumeStudio: React.FC = () => {
               </div>
 
               {/* Document Preview Canvas Wrapper */}
-              <div className={`${isMobileView ? 'max-w-[320px] mx-auto border-8 border-zinc-250 rounded-[32px] overflow-hidden shadow-2xl' : ''}`}>
-                <div className="relative group bg-white p-2.5 rounded-2xl border border-zinc-200 shadow-inner overflow-x-auto min-h-[500px]">
+              <div className={`${isMobileView ? 'max-w-[320px] mx-auto border-8 border-zinc-850 rounded-[32px] overflow-hidden shadow-2xl' : ''}`}>
+                <div className="relative group bg-zinc-950 p-2.5 rounded-2xl border border-zinc-850 shadow-inner overflow-x-auto min-h-[500px]">
                   {activeResume && (
                     <Preview 
                       activeResume={activeResume} 
@@ -661,15 +661,15 @@ export const ResumeStudio: React.FC = () => {
 
       {/* COMPARE VERSIONS MODAL */}
       {isComparing && activeResume && (
-        <div className="fixed inset-0 z-[100] bg-[#f4f3ef] p-6 flex flex-col space-y-4 animate-fade-in text-zinc-800">
-          <div className="flex justify-between items-center pb-4 border-b border-zinc-200">
+        <div className="fixed inset-0 z-[100] bg-black/90 p-6 flex flex-col space-y-4 animate-fade-in text-white">
+          <div className="flex justify-between items-center pb-4 border-b border-zinc-800">
             <div>
-              <h3 className="text-sm font-black uppercase text-[#1a1c3d] tracking-widest">Compare Resume Versions</h3>
-              <p className="text-[10px] text-zinc-500 mt-0.5">Visually verify and compare formatting changes side-by-side.</p>
+              <h3 className="text-sm font-black uppercase text-white tracking-widest">Compare Resume Versions</h3>
+              <p className="text-[10px] text-zinc-550 mt-0.5">Visually verify and compare formatting changes side-by-side.</p>
             </div>
             <button 
               onClick={() => setIsComparing(false)} 
-              className="bg-[#1a1c3d] hover:bg-[#282a57] text-xs font-black uppercase tracking-wider text-white px-4 py-2.5 rounded-xl transition cursor-pointer"
+              className="bg-rose-600 hover:bg-rose-500 text-xs font-black uppercase tracking-wider text-white px-4 py-2.5 rounded-xl transition cursor-pointer"
             >
               Close Comparison
             </button>
@@ -677,20 +677,20 @@ export const ResumeStudio: React.FC = () => {
           
           <div className="flex-1 grid grid-cols-2 gap-6 overflow-hidden">
             {/* Left Version */}
-            <div className="flex flex-col space-y-2.5 h-full overflow-y-auto bg-white border border-zinc-200 p-4 rounded-xl scrollbar-thin">
-              <span className="text-xs font-black uppercase tracking-wider text-[#1a1c3d]">Current: {activeResume.name} ({activeResume.version})</span>
-              <div className="relative overflow-x-auto p-4 bg-zinc-50 border border-zinc-200 rounded-lg flex-1">
+            <div className="flex flex-col space-y-2.5 h-full overflow-y-auto bg-zinc-900 border border-zinc-850 p-4 rounded-xl scrollbar-thin">
+              <span className="text-xs font-black uppercase tracking-wider text-indigo-400">Current: {activeResume.name} ({activeResume.version})</span>
+              <div className="relative overflow-x-auto p-4 bg-zinc-950 border border-zinc-850 rounded-lg flex-1">
                 <Preview activeResume={activeResume} userProfile={userProfile} zoom={0.65} />
               </div>
             </div>
             {/* Right Version Selector */}
-            <div className="flex flex-col space-y-2.5 h-full overflow-y-auto bg-white border border-zinc-200 p-4 rounded-xl scrollbar-thin">
+            <div className="flex flex-col space-y-2.5 h-full overflow-y-auto bg-zinc-900 border border-zinc-850 p-4 rounded-xl scrollbar-thin">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase tracking-wider text-[#1a1c3d]">Compare With:</span>
+                <span className="text-xs font-black uppercase tracking-wider text-indigo-400">Compare With:</span>
                 <select 
                   value={compareTargetId} 
                   onChange={e => setCompareTargetId(e.target.value)}
-                  className="bg-zinc-50 border border-zinc-200 text-xs p-1.5 rounded-lg text-zinc-700 outline-none font-bold cursor-pointer"
+                  className="bg-zinc-950 border border-zinc-800 text-xs p-1.5 rounded-lg text-zinc-305 outline-none font-bold"
                 >
                   <option value="">Select Version</option>
                   {resumes.filter(r => r.id !== activeResume.id).map(r => (
@@ -699,11 +699,11 @@ export const ResumeStudio: React.FC = () => {
                 </select>
               </div>
               {compareTargetResume ? (
-                <div className="relative overflow-x-auto p-4 bg-zinc-50 border border-zinc-200 rounded-lg flex-1">
+                <div className="relative overflow-x-auto p-4 bg-zinc-950 border border-zinc-850 rounded-lg flex-1">
                   <Preview activeResume={compareTargetResume} userProfile={userProfile} zoom={0.65} />
                 </div>
               ) : (
-                <div className="flex-1 flex items-center justify-center text-zinc-400 italic text-xs border border-dashed border-zinc-200 rounded-lg bg-zinc-50/50">
+                <div className="flex-1 flex items-center justify-center text-zinc-550 italic text-xs border border-dashed border-zinc-850 rounded-lg bg-zinc-950/20">
                   Select a target version to compare side-by-side.
                 </div>
               )}
