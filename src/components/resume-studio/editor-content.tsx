@@ -825,14 +825,14 @@ export const EditorContent: React.FC<EditorContentProps> = ({
             </div>
 
             {/* Right: Photo editor */}
-            <div className="sm:col-span-1 bg-zinc-900/40 border border-zinc-850 p-4 rounded-xl flex flex-col items-center justify-center space-y-2 relative">
+            <div className="sm:col-span-1 bg-zinc-900/40 border border-zinc-850 p-4 rounded-xl flex flex-col items-center justify-center min-h-[160px] relative">
               <label className="text-zinc-450 font-black block text-[9px] uppercase tracking-wider absolute top-2 left-0 right-0 text-center">Photo</label>
               
               <div 
                 onClick={() => setIsPhotoModalOpen(true)}
-                className="w-16 h-20 border border-zinc-800 bg-zinc-950 hover:border-zinc-700 flex items-center justify-center overflow-hidden relative cursor-pointer transition-all mt-4 group animate-fade-in"
+                className="w-full max-w-[130px] border border-zinc-800 bg-zinc-950 hover:border-zinc-700 flex items-center justify-center overflow-hidden relative cursor-pointer transition-all mt-4 group animate-fade-in"
                 style={{
-                  borderRadius: activeResume.photoStyle === 'circle' ? '50%' : activeResume.photoStyle === 'rounded' ? '12px' : activeResume.photoStyle === 'portrait' || activeResume.photoStyle === 'landscape' ? '8px' : '0px',
+                  borderRadius: activeResume.photoStyle === 'circle' ? '50%' : activeResume.photoStyle === 'rounded' ? '16px' : activeResume.photoStyle === 'portrait' || activeResume.photoStyle === 'landscape' ? '12px' : '4px',
                   aspectRatio: activeResume.photoStyle === 'portrait' ? '3/4' : activeResume.photoStyle === 'landscape' ? '4/3' : '1/1'
                 }}
               >
