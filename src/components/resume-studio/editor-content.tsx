@@ -826,10 +826,7 @@ export const EditorContent: React.FC<EditorContentProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 { label: 'Full Name', field: 'personalName', placeholder: 'e.g. Alex Dev' },
-                { label: 'Job Title / Professional Headline', field: 'personalTitle', placeholder: 'e.g. Senior Software Engineer' },
-                { label: 'Email Address', field: 'personalEmail', placeholder: 'e.g. alex.dev@gmail.com' },
-                { label: 'Phone Number', field: 'personalPhone', placeholder: 'e.g. +1 (555) 019-2834' },
-                { label: 'Location / Address', field: 'personalLocation', placeholder: 'e.g. San Francisco, CA' }
+                { label: 'Job Title / Professional Headline', field: 'personalTitle', placeholder: 'e.g. Senior Software Engineer' }
               ].map(col => (
                 <div key={col.field} className="space-y-1">
                   <label className="text-zinc-450 font-black block text-[10px] uppercase tracking-wider">{col.label}</label>
