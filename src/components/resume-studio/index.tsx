@@ -9,7 +9,7 @@ import {
   FileText, Sparkles, Compass, Plus, Undo2, Redo2, 
   ZoomIn, ZoomOut, Maximize2, Minimize2, Smartphone, 
   Monitor, RefreshCw, Trash2, Info, Copy, Columns, X, CheckSquare,
-  Download
+  Download, Grid, MoreVertical, Languages, ArrowRight, Pencil, ChevronDown, Check
 } from 'lucide-react';
 
 export const ResumeStudio: React.FC = () => {
@@ -22,6 +22,8 @@ export const ResumeStudio: React.FC = () => {
   } = useAppStore();
 
   const [selectedResumeId, setSelectedResumeId] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'dashboard' | 'editor'>('dashboard');
+  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [resumeSubTab, setResumeSubTab] = useState<'content' | 'customize' | 'ai-tools'>('content');
   
   // Preview Controls
@@ -46,7 +48,7 @@ export const ResumeStudio: React.FC = () => {
   // PDF Export States
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
-  const handleDownloadPdf = async () => {
+  const downloadSpecificPdf = async (resumeToDownload: any) => {
     if (isDownloadingPdf) return;
     setIsDownloadingPdf(true);
 
@@ -57,7 +59,7 @@ export const ResumeStudio: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          activeResume,
+          activeResume: resumeToDownload,
           userProfile
         }),
       });
@@ -88,6 +90,10 @@ export const ResumeStudio: React.FC = () => {
     } finally {
       setIsDownloadingPdf(false);
     }
+  };
+
+  const handleDownloadPdf = async () => {
+    await downloadSpecificPdf(activeResume);
   };
 
   const activeResume = resumes.find(r => r.id === selectedResumeId) || resumes[0];
@@ -169,48 +175,61 @@ export const ResumeStudio: React.FC = () => {
     setTimeout(() => setToastMsg(''), 2500);
   };
 
-  // Duplicate active resume
-  const handleDuplicateResume = () => {
+  // Duplicate specific resume
+  const duplicateSpecificResume = (resumeToDuplicate: any) => {
     const prevLength = resumes.length;
-    addResumeVersion(`${activeResume.name} Copy`, activeResume.template);
+    addResumeVersion(`${resumeToDuplicate.name} Copy`, resumeToDuplicate.template);
     showToast("Duplicating version...");
 
     setTimeout(() => {
       const currentStore = useAppStore.getState();
       const latestResume = currentStore.resumes[currentStore.resumes.length - 1];
       if (latestResume && currentStore.resumes.length > prevLength) {
-        const { id, version, name, ...restOfFields } = activeResume;
+        const { id, version, name, ...restOfFields } = resumeToDuplicate;
         updateResume(latestResume.id, restOfFields);
-        setSelectedResumeId(latestResume.id);
         showToast("Resume version duplicated successfully!");
       }
     }, 150);
   };
 
-  if (resumes.length === 0) {
-    return (
-      <div className="text-center py-12 bg-zinc-900 border border-zinc-800 rounded-2xl">
-        <FileText className="w-12 h-12 text-zinc-650 mx-auto mb-3 animate-pulse" />
-        <h3 className="text-sm font-semibold text-white">No resume versions found</h3>
-        <p className="text-xs text-zinc-500 mt-1 mb-4">Create a resume version to start customizing.</p>
-        <button
-          onClick={() => addResumeVersion("Resume V1", "ats-classic")}
-          className="bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white px-4 py-2 rounded-xl transition cursor-pointer"
-        >
-          Create V1 Resume
-        </button>
-      </div>
-    );
-  }
+  // Duplicate active resume
+  const handleDuplicateResume = () => {
+    duplicateSpecificResume(activeResume);
+  };
 
-  if (!activeResume) return null;
+  // Create new resume version from dashboard
+  const handleCreateNewResume = () => {
+    const name = prompt("Enter version name:", `Resume V${resumes.length + 1}`);
+    if (!name) return;
+    const prevLength = resumes.length;
+    addResumeVersion(name, "ats-classic");
+    showToast("Creating new resume...");
+    setTimeout(() => {
+      const currentStore = useAppStore.getState();
+      const latestResume = currentStore.resumes[currentStore.resumes.length - 1];
+      if (latestResume && currentStore.resumes.length > prevLength) {
+        setSelectedResumeId(latestResume.id);
+        setViewMode('editor');
+        showToast("New resume created!");
+      }
+    }, 150);
+  };
 
-  const shareUrl = typeof window !== 'undefined' 
+  // Force dashboard mode if no resumes exist
+  useEffect(() => {
+    if (resumes.length === 0 && viewMode !== 'dashboard') {
+      setViewMode('dashboard');
+    }
+  }, [resumes.length, viewMode]);
+
+  if (!activeResume && resumes.length > 0) return null;
+
+  const shareUrl = typeof window !== 'undefined' && activeResume
     ? `${window.location.origin}/resume/share/${activeResume.id}` 
     : '';
 
   return (
-    <div className="space-y-4 relative z-10 select-none">
+    <div className="space-y-4 relative z-10 select-none light-studio bg-[#f4f3ef] min-h-[calc(100vh-140px)] rounded-2xl p-6">
       
       {/* Toast popup */}
       {toastMsg && (
@@ -220,73 +239,190 @@ export const ResumeStudio: React.FC = () => {
         </div>
       )}
 
-      {/* Top version selectors bar */}
-      <div className="flex flex-wrap gap-2 items-center bg-zinc-900 border border-zinc-850 p-2 rounded-xl">
-        <div className="flex flex-wrap gap-1.5 items-center">
-          {resumes.map(r => (
-            <button
-              key={r.id}
-              onClick={() => {
-                setSelectedResumeId(r.id);
-                setHistory([]);
-              }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                selectedResumeId === r.id ? 'bg-indigo-650 text-white shadow' : 'text-zinc-500 hover:text-zinc-355'
-              }`}
+      {/* DASHBOARD VIEW */}
+      {viewMode === 'dashboard' ? (
+        <div className="space-y-6 animate-fade-in">
+          <div className="flex flex-col text-left">
+            <h2 className="text-2xl font-black text-[#1a1c3d] tracking-tight">My Resumes</h2>
+            <p className="text-xs text-zinc-500 font-bold mt-1">
+              Your first resume is free forever. Need more than one resume?{' '}
+              <span className="underline hover:text-indigo-650 cursor-pointer">Upgrade your plan</span>
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {/* New Resume Card */}
+            <div 
+              onClick={handleCreateNewResume}
+              className="bg-white border-2 border-dashed border-zinc-200 hover:border-indigo-500 rounded-2xl h-80 flex flex-col items-center justify-center cursor-pointer transition duration-300 group hover:shadow-md select-none"
             >
-              {r.name} ({r.version})
+              <div className="w-12 h-12 rounded-full bg-zinc-50 flex items-center justify-center border border-zinc-150 group-hover:border-indigo-500/20 group-hover:bg-indigo-50 transition mb-3">
+                <Plus className="w-6 h-6 text-zinc-400 group-hover:text-indigo-650 transition" />
+              </div>
+              <span className="text-zinc-500 group-hover:text-indigo-650 font-black text-xs uppercase tracking-wider">New resume</span>
+            </div>
+
+            {/* Resume Cards */}
+            {resumes.map(r => {
+              const isDropdownOpen = activeDropdownId === r.id;
+              return (
+                <div 
+                  key={r.id}
+                  className="bg-white border border-zinc-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col relative group h-80"
+                >
+                  {/* Top preview section with scaled Preview inside */}
+                  <div className="h-64 bg-zinc-50 border-b border-zinc-100 flex items-center justify-center relative overflow-hidden select-none">
+                    <div className="absolute w-[800px] h-[1050px] scale-[0.22] origin-top bg-white shadow-md pointer-events-none" style={{ top: '12px' }}>
+                      <Preview activeResume={r} userProfile={userProfile} zoom={1} />
+                    </div>
+
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-[#f4f3ef]/90 backdrop-blur-[1px] flex flex-col items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                      <button 
+                        onClick={() => { 
+                          setSelectedResumeId(r.id); 
+                          setHistory([]); 
+                          setViewMode('editor'); 
+                        }} 
+                        className="bg-[#1a1c3d] hover:bg-[#282a57] text-white text-[10px] font-black uppercase tracking-wider py-2.5 px-6 rounded-xl flex items-center gap-1.5 cursor-pointer shadow transition active:scale-[0.98]"
+                      >
+                        <span>View Resume</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => duplicateSpecificResume(r)} 
+                        className="bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 text-[10px] font-black uppercase tracking-wider py-2.5 px-6 rounded-xl flex items-center gap-1.5 cursor-pointer transition active:scale-[0.98]"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-zinc-550" />
+                        <span>Duplicate</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Bottom metadata */}
+                  <div className="p-3.5 flex items-center justify-between bg-white relative flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-6 text-left">
+                      <h4 className="font-bold text-zinc-800 text-xs truncate" title={r.name}>{r.name}</h4>
+                      <span className="text-[9px] text-zinc-400 font-bold block mt-0.5 uppercase tracking-wider truncate">
+                        edited recently • {r.template.replace('ats-', '')}
+                      </span>
+                    </div>
+
+                    {/* Ellipsis menu */}
+                    <div className="relative">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveDropdownId(isDropdownOpen ? null : r.id);
+                        }}
+                        className="p-1 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/60 text-zinc-500 hover:text-zinc-750 rounded-lg cursor-pointer transition"
+                      >
+                        <MoreVertical className="w-3.5 h-3.5" />
+                      </button>
+
+                      {isDropdownOpen && (
+                        <>
+                          <div className="fixed inset-0 z-30 cursor-default" onClick={(e) => { e.stopPropagation(); setActiveDropdownId(null); }} />
+                          <div className="absolute right-0 bottom-8 bg-white border border-zinc-200 rounded-xl shadow-xl z-40 p-1.5 w-40 text-[11px] font-bold text-zinc-650 space-y-0.5 text-left">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                const newName = prompt("Rename version:", r.name);
+                                if (newName) updateResume(r.id, { name: newName });
+                              }}
+                              className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                            >
+                              <Pencil className="w-3.5 h-3.5 text-zinc-400" />
+                              <span>Edit title</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                duplicateSpecificResume(r);
+                              }}
+                              className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                            >
+                              <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                              <span>Duplicate</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                alert("AI translation initiated (Beta)...");
+                              }}
+                              className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                            >
+                              <Languages className="w-3.5 h-3.5 text-zinc-400" />
+                              <span className="flex items-center gap-1">
+                                <span>AI translate</span>
+                                <span className="text-[7.5px] font-black uppercase text-emerald-600 bg-emerald-50 border border-emerald-200/50 px-1 py-0.2 rounded shrink-0">Beta</span>
+                              </span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                downloadSpecificPdf(r);
+                              }}
+                              className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                            >
+                              <Download className="w-3.5 h-3.5 text-zinc-400" />
+                              <span>Download</span>
+                            </button>
+                            <div className="h-px bg-zinc-100 my-1" />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                if (confirm(`Delete "${r.name}" version? This cannot be undone.`)) {
+                                  deleteResume(r.id);
+                                  if (selectedResumeId === r.id) {
+                                    const remaining = resumes.filter(x => x.id !== r.id);
+                                    if (remaining.length > 0) setSelectedResumeId(remaining[0].id);
+                                  }
+                                  showToast("Version deleted");
+                                }
+                              }}
+                              className="w-full px-2.5 py-2 hover:bg-rose-50 text-rose-600 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        /* EDITOR WORKSPACE VIEW */
+        <div className="space-y-4 animate-fade-in">
+          {/* Editor Header Bar (White styling) */}
+          <div className="flex flex-wrap items-center bg-white border border-zinc-200 px-4 py-3.5 rounded-2xl shadow-sm text-zinc-800 gap-3">
+            {/* Far Left: Overview */}
+            <button
+              onClick={() => setViewMode('dashboard')}
+              className="flex items-center gap-1.5 px-3 py-2 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-xl text-zinc-700 text-xs font-black uppercase tracking-wider transition cursor-pointer select-none"
+            >
+              <Grid className="w-3.5 h-3.5 text-zinc-550" />
+              <span>Overview</span>
             </button>
-          ))}
-        </div>
-        
-        <div className="ml-auto flex items-center gap-2.5">
-          <button
-            onClick={handleDuplicateResume}
-            className="flex items-center gap-1 text-[11px] font-black uppercase text-zinc-400 hover:text-zinc-200 px-2.5 py-1.5 transition cursor-pointer"
-            title="Duplicate current version"
-          >
-            <Copy className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Duplicate</span>
-          </button>
-          
-          <button
-            onClick={() => setIsComparing(true)}
-            className="flex items-center gap-1 text-[11px] font-black uppercase text-zinc-400 hover:text-zinc-200 px-2.5 py-1.5 transition cursor-pointer"
-            title="Compare versions side-by-side"
-          >
-            <Columns className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Compare</span>
-          </button>
 
-          <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
+            <div className="h-5 w-px bg-zinc-200 hidden sm:block" />
 
-          <button
-            onClick={() => {
-              const name = prompt("Enter version name:", `Resume V${resumes.length + 1} - Custom`);
-              if (name) {
-                addResumeVersion(name, "ats-classic");
-                showToast("New version created!");
-              }
-            }}
-            className="flex items-center gap-1 text-[11px] font-black uppercase text-indigo-400 hover:text-indigo-300 px-3 py-1.5 transition cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>New Version</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Editor & Preview workspace grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
-        
-        {/* LEFT WORKSPACE (col-span-5): Form editor and controls */}
-        <div className="xl:col-span-5 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-5 overflow-y-auto xl:h-[calc(100vh-185px)] scrollbar-thin">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-850 pb-3">
-            <div className="flex items-center gap-1 bg-zinc-950/60 p-1.5 rounded-xl border border-zinc-850 shadow-inner w-fit">
+            {/* Middle: Content, Customize, AI Tools tabs */}
+            <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 shadow-inner w-fit">
               {[
-                { id: 'content', label: 'Content System', icon: FileText },
-                { id: 'customize', label: 'Customization', icon: Sparkles },
-                { id: 'ai-tools', label: 'AI Copilot', icon: Compass }
+                { id: 'content', label: 'Content', icon: FileText },
+                { id: 'customize', label: 'Customize', icon: Sparkles },
+                { id: 'ai-tools', label: 'AI Tools', icon: Compass }
               ].map(sub => {
                 const SubIcon = sub.icon;
                 const isSubActive = resumeSubTab === sub.id;
@@ -294,8 +430,8 @@ export const ResumeStudio: React.FC = () => {
                   <button
                     key={sub.id}
                     onClick={() => setResumeSubTab(sub.id as any)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black uppercase transition whitespace-nowrap cursor-pointer ${
-                      isSubActive ? 'bg-indigo-650 text-white shadow' : 'text-zinc-500 hover:text-zinc-350'
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-black uppercase transition whitespace-nowrap cursor-pointer ${
+                      isSubActive ? 'bg-[#1a1c3d] text-white shadow' : 'text-zinc-500 hover:text-zinc-800'
                     }`}
                   >
                     <SubIcon className="w-3.5 h-3.5" />
@@ -305,122 +441,28 @@ export const ResumeStudio: React.FC = () => {
               })}
             </div>
 
-            {/* Version rename / delete controls */}
-            <div className="flex items-center gap-3 text-xs">
-              <div>
-                <span className="text-[9px] font-black text-zinc-550 uppercase tracking-wider block mb-0.5">Rename version</span>
-                <input
-                  type="text"
-                  value={activeResume.name}
-                  onChange={(e) => updateResume(activeResume.id, { name: e.target.value })}
-                  className="bg-transparent text-xs font-black text-white outline-none border-b border-transparent hover:border-zinc-700 focus:border-indigo-500 py-0.5 transition w-full sm:w-36"
-                />
-              </div>
+            <div className="h-5 w-px bg-zinc-200 hidden md:block" />
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm(`Delete "${activeResume.name}" version? This cannot be undone.`)) {
-                    const remaining = resumes.filter(r => r.id !== activeResume.id);
-                    deleteResume(activeResume.id);
-                    if (remaining.length > 0) {
-                      setSelectedResumeId(remaining[0].id);
-                    } else {
-                      setSelectedResumeId('');
-                    }
-                    showToast("Version deleted");
-                  }
-                }}
-                className="flex items-center gap-1 text-rose-500 hover:text-rose-400 font-bold hover:bg-rose-955/20 px-2.5 py-1.5 rounded-lg transition shrink-0 cursor-pointer"
-                title="Delete this resume version"
+            {/* Right Side: Version selector, download, ellipsis */}
+            <div className="ml-auto flex items-center gap-3">
+              {/* Version dropdown */}
+              <select
+                value={selectedResumeId}
+                onChange={e => { setSelectedResumeId(e.target.value); setHistory([]); }}
+                className="bg-zinc-50 border border-zinc-200 text-[11px] font-black text-zinc-750 rounded-xl px-3 py-2 outline-none cursor-pointer focus:border-indigo-500"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete</span>
-              </button>
-            </div>
-          </div>
+                {resumes.map(r => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.version})
+                  </option>
+                ))}
+              </select>
 
-          {/* Sub-tab Rendering */}
-          {resumeSubTab === 'content' && (
-            <EditorContent 
-              activeResume={activeResume} 
-              userProfile={userProfile} 
-              onUpdateResume={(updates) => updateResume(activeResume.id, updates)} 
-            />
-          )}
-
-          {resumeSubTab === 'customize' && (
-            <EditorCustomize 
-              activeResume={activeResume} 
-              onUpdateResume={(updates) => updateResume(activeResume.id, updates)} 
-            />
-          )}
-
-          {resumeSubTab === 'ai-tools' && (
-            <EditorAi 
-              activeResume={activeResume} 
-              onUpdateResume={(updates) => updateResume(activeResume.id, updates)} 
-            />
-          )}
-        </div>
-
-        {/* RIGHT WORKSPACE (col-span-7): Document Sheet Live Preview */}
-        <div className="xl:col-span-7 space-y-4 overflow-y-auto xl:h-[calc(100vh-185px)] pr-1 scrollbar-thin">
-          {/* Floating Controls Toolbar */}
-          <div className="flex items-center justify-between bg-zinc-900 border border-zinc-800 px-4 py-3 rounded-2xl text-xs">
-            <div className="flex items-center gap-1">
+              {/* Download PDF button */}
               <button
-                onClick={handleUndo}
-                disabled={historyIndex <= 0}
-                className="p-1.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-400 disabled:opacity-30 rounded-lg cursor-pointer transition"
-                title="Undo (Ctrl+Z)"
-              >
-                <Undo2 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={handleRedo}
-                disabled={historyIndex >= history.length - 1}
-                className="p-1.5 bg-zinc-950 border border-zinc-850 hover:border-zinc-700 text-zinc-400 disabled:opacity-30 rounded-lg cursor-pointer transition"
-                title="Redo (Ctrl+Y)"
-              >
-                <Redo2 className="w-3.5 h-3.5" />
-              </button>
-              
-              <div className="w-px h-6 bg-zinc-850 mx-1.5" />
-              
-              {/* Zoom Dropdown Selector */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-zinc-550 font-black text-[9px] uppercase tracking-wider">Zoom:</span>
-                <select
-                  value={zoom}
-                  onChange={e => setZoom(parseFloat(e.target.value))}
-                  className="bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-400 rounded p-1 outline-none font-bold"
-                >
-                  <option value={0.5}>50%</option>
-                  <option value={0.75}>75%</option>
-                  <option value={0.85}>85%</option>
-                  <option value={1.0}>100%</option>
-                  <option value={1.25}>125%</option>
-                  <option value={1.5}>150%</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsMobileView(!isMobileView)}
-                className={`p-1.5 border rounded-lg cursor-pointer transition ${
-                  isMobileView ? 'bg-indigo-650 border-indigo-600 text-white' : 'bg-zinc-955 border-zinc-850 text-zinc-450 hover:text-zinc-250'
-                }`}
-                title={isMobileView ? 'Web View' : 'Mobile View'}
-              >
-                {isMobileView ? <Monitor className="w-3.5 h-3.5" /> : <Smartphone className="w-3.5 h-3.5" />}
-              </button>
-
-              <button
-                onClick={handleDownloadPdf}
+                onClick={() => downloadSpecificPdf(activeResume)}
                 disabled={isDownloadingPdf}
-                className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-indigo-650 hover:bg-indigo-600 disabled:bg-zinc-800 text-white text-[10px] font-bold transition cursor-pointer disabled:cursor-not-allowed select-none shadow-sm active:scale-[0.98]"
+                className="flex items-center gap-1.5 py-2 px-4.5 rounded-xl bg-[#1a1c3d] hover:bg-[#282a57] disabled:bg-zinc-250 text-white text-[11px] font-black uppercase tracking-wider transition cursor-pointer disabled:cursor-not-allowed select-none shadow-sm active:scale-[0.98]"
               >
                 {isDownloadingPdf ? (
                   <>
@@ -430,45 +472,204 @@ export const ResumeStudio: React.FC = () => {
                 ) : (
                   <>
                     <Download className="w-3.5 h-3.5" />
-                    <span>Download PDF</span>
+                    <span>Download</span>
                   </>
                 )}
               </button>
+
+              {/* Ellipsis button */}
+              <div className="relative">
+                <button
+                  onClick={() => setActiveDropdownId(activeDropdownId === 'editor-menu' ? null : 'editor-menu')}
+                  className="p-2 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-500 hover:text-zinc-750 rounded-xl cursor-pointer transition flex items-center justify-center"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+
+                {activeDropdownId === 'editor-menu' && (
+                  <>
+                    <div className="fixed inset-0 z-30 cursor-default" onClick={() => setActiveDropdownId(null)} />
+                    <div className="absolute right-0 mt-2 bg-white border border-zinc-200 rounded-xl shadow-xl z-40 p-1.5 w-44 text-[11px] font-bold text-zinc-650 space-y-0.5 text-left">
+                      <button
+                        onClick={() => {
+                          setActiveDropdownId(null);
+                          const newName = prompt("Rename version:", activeResume.name);
+                          if (newName) updateResume(activeResume.id, { name: newName });
+                        }}
+                        className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>Rename version</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveDropdownId(null);
+                          handleDuplicateResume();
+                        }}
+                        className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>Duplicate version</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveDropdownId(null);
+                          setIsComparing(true);
+                        }}
+                        className="w-full px-2.5 py-2 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                      >
+                        <Columns className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>Compare versions</span>
+                      </button>
+                      <div className="h-px bg-zinc-100 my-1" />
+                      <button
+                        onClick={() => {
+                          setActiveDropdownId(null);
+                          if (window.confirm(`Delete "${activeResume.name}" version? This cannot be undone.`)) {
+                            const remaining = resumes.filter(r => r.id !== activeResume.id);
+                            deleteResume(activeResume.id);
+                            if (remaining.length > 0) {
+                              setSelectedResumeId(remaining[0].id);
+                            } else {
+                              setSelectedResumeId('');
+                            }
+                            showToast("Version deleted");
+                          }
+                        }}
+                        className="w-full px-2.5 py-2 hover:bg-rose-50 text-rose-600 rounded-lg flex items-center gap-2 cursor-pointer transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete version</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Document Preview Canvas Wrapper */}
-          <div className={`${isMobileView ? 'max-w-[320px] mx-auto border-8 border-zinc-850 rounded-[32px] overflow-hidden shadow-2xl' : ''}`}>
-            <div className="relative group bg-zinc-950 p-2.5 rounded-2xl border border-zinc-850 shadow-inner overflow-x-auto min-h-[500px]">
-              <Preview 
-                activeResume={activeResume} 
-                userProfile={userProfile} 
-                zoom={isMobileView ? 0.45 : zoom} 
-              />
+          {/* Editor & Preview workspace grid */}
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+            
+            {/* LEFT WORKSPACE (col-span-5): Form editor and controls */}
+            <div className="xl:col-span-5 bg-white border border-zinc-200 rounded-2xl p-5 space-y-5 overflow-y-auto xl:h-[calc(100vh-185px)] scrollbar-thin shadow-sm text-zinc-800 editor-container-card">
+              {/* Sub-tab Rendering */}
+              {resumeSubTab === 'content' && (
+                <EditorContent 
+                  activeResume={activeResume} 
+                  userProfile={userProfile} 
+                  onUpdateResume={(updates) => updateResume(activeResume.id, updates)} 
+                />
+              )}
+
+              {resumeSubTab === 'customize' && (
+                <EditorCustomize 
+                  activeResume={activeResume} 
+                  onUpdateResume={(updates) => updateResume(activeResume.id, updates)} 
+                />
+              )}
+
+              {resumeSubTab === 'ai-tools' && (
+                <EditorAi 
+                  activeResume={activeResume} 
+                  onUpdateResume={(updates) => updateResume(activeResume.id, updates)} 
+                />
+              )}
+            </div>
+
+            {/* RIGHT WORKSPACE (col-span-7): Document Sheet Live Preview */}
+            <div className="xl:col-span-7 space-y-4 overflow-y-auto xl:h-[calc(100vh-185px)] pr-1 scrollbar-thin">
+              {/* Floating Controls Toolbar */}
+              <div className="flex items-center justify-between bg-white border border-zinc-200 px-4 py-3 rounded-2xl text-xs text-zinc-800 shadow-sm">
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={handleUndo}
+                    disabled={historyIndex <= 0}
+                    className="p-1.5 bg-zinc-50 border border-zinc-200 hover:border-zinc-350 text-zinc-500 disabled:opacity-30 rounded-lg cursor-pointer transition"
+                    title="Undo (Ctrl+Z)"
+                  >
+                    <Undo2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={handleRedo}
+                    disabled={historyIndex >= history.length - 1}
+                    className="p-1.5 bg-zinc-50 border border-zinc-200 hover:border-zinc-350 text-zinc-500 disabled:opacity-30 rounded-lg cursor-pointer transition"
+                    title="Redo (Ctrl+Y)"
+                  >
+                    <Redo2 className="w-3.5 h-3.5" />
+                  </button>
+                  
+                  <div className="w-px h-6 bg-zinc-200 mx-1.5" />
+                  
+                  {/* Zoom Dropdown Selector */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-zinc-500 font-black text-[9px] uppercase tracking-wider">Zoom:</span>
+                    <select
+                      value={zoom}
+                      onChange={e => setZoom(parseFloat(e.target.value))}
+                      className="bg-zinc-50 border border-zinc-200 text-[10px] text-zinc-500 rounded p-1 outline-none font-bold cursor-pointer"
+                    >
+                      <option value={0.5}>50%</option>
+                      <option value={0.75}>75%</option>
+                      <option value={0.85}>85%</option>
+                      <option value={1.0}>100%</option>
+                      <option value={1.25}>125%</option>
+                      <option value={1.5}>150%</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsMobileView(!isMobileView)}
+                    className={`p-1.5 border rounded-lg cursor-pointer transition ${
+                      isMobileView ? 'bg-[#1a1c3d] border-[#1a1c3d] text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-500 hover:text-zinc-800'
+                    }`}
+                    title={isMobileView ? 'Web View' : 'Mobile View'}
+                  >
+                    {isMobileView ? <Monitor className="w-3.5 h-3.5" /> : <Smartphone className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Document Preview Canvas Wrapper */}
+              <div className={`${isMobileView ? 'max-w-[320px] mx-auto border-8 border-zinc-250 rounded-[32px] overflow-hidden shadow-2xl' : ''}`}>
+                <div className="relative group bg-white p-2.5 rounded-2xl border border-zinc-200 shadow-inner overflow-x-auto min-h-[500px]">
+                  {activeResume && (
+                    <Preview 
+                      activeResume={activeResume} 
+                      userProfile={userProfile} 
+                      zoom={isMobileView ? 0.45 : zoom} 
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Premium tools panel */}
+              {activeResume && (
+                <PremiumTools 
+                  activeResume={activeResume} 
+                  userProfile={userProfile}
+                  onUpdateResume={(updates) => updateResume(activeResume.id, updates)} 
+                  shareUrl={shareUrl}
+                />
+              )}
             </div>
           </div>
-
-          {/* Premium tools panel */}
-          <PremiumTools 
-            activeResume={activeResume} 
-            userProfile={userProfile}
-            onUpdateResume={(updates) => updateResume(activeResume.id, updates)} 
-            shareUrl={shareUrl}
-          />
         </div>
-      </div>
+      )}
 
-      {/* 4. COMPARE VERSIONS MODAL */}
-      {isComparing && (
-        <div className="fixed inset-0 z-[100] bg-black/90 p-6 flex flex-col space-y-4 animate-fade-in">
-          <div className="flex justify-between items-center pb-4 border-b border-zinc-800">
+      {/* COMPARE VERSIONS MODAL */}
+      {isComparing && activeResume && (
+        <div className="fixed inset-0 z-[100] bg-[#f4f3ef] p-6 flex flex-col space-y-4 animate-fade-in text-zinc-800">
+          <div className="flex justify-between items-center pb-4 border-b border-zinc-200">
             <div>
-              <h3 className="text-sm font-black uppercase text-white tracking-widest">Compare Resume Versions</h3>
-              <p className="text-[10px] text-zinc-550 mt-0.5">Visually verify and compare formatting changes side-by-side.</p>
+              <h3 className="text-sm font-black uppercase text-[#1a1c3d] tracking-widest">Compare Resume Versions</h3>
+              <p className="text-[10px] text-zinc-500 mt-0.5">Visually verify and compare formatting changes side-by-side.</p>
             </div>
             <button 
               onClick={() => setIsComparing(false)} 
-              className="bg-rose-600 hover:bg-rose-500 text-xs font-black uppercase tracking-wider text-white px-4 py-2.5 rounded-xl transition cursor-pointer"
+              className="bg-[#1a1c3d] hover:bg-[#282a57] text-xs font-black uppercase tracking-wider text-white px-4 py-2.5 rounded-xl transition cursor-pointer"
             >
               Close Comparison
             </button>
@@ -476,20 +677,20 @@ export const ResumeStudio: React.FC = () => {
           
           <div className="flex-1 grid grid-cols-2 gap-6 overflow-hidden">
             {/* Left Version */}
-            <div className="flex flex-col space-y-2.5 h-full overflow-y-auto bg-zinc-900 border border-zinc-850 p-4 rounded-xl scrollbar-thin">
-              <span className="text-xs font-black uppercase tracking-wider text-indigo-400">Current: {activeResume.name} ({activeResume.version})</span>
-              <div className="relative overflow-x-auto p-2 bg-zinc-950 rounded-lg flex-1">
+            <div className="flex flex-col space-y-2.5 h-full overflow-y-auto bg-white border border-zinc-200 p-4 rounded-xl scrollbar-thin">
+              <span className="text-xs font-black uppercase tracking-wider text-[#1a1c3d]">Current: {activeResume.name} ({activeResume.version})</span>
+              <div className="relative overflow-x-auto p-4 bg-zinc-50 border border-zinc-200 rounded-lg flex-1">
                 <Preview activeResume={activeResume} userProfile={userProfile} zoom={0.65} />
               </div>
             </div>
             {/* Right Version Selector */}
-            <div className="flex flex-col space-y-2.5 h-full overflow-y-auto bg-zinc-900 border border-zinc-850 p-4 rounded-xl scrollbar-thin">
+            <div className="flex flex-col space-y-2.5 h-full overflow-y-auto bg-white border border-zinc-200 p-4 rounded-xl scrollbar-thin">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase tracking-wider text-indigo-400">Compare With:</span>
+                <span className="text-xs font-black uppercase tracking-wider text-[#1a1c3d]">Compare With:</span>
                 <select 
                   value={compareTargetId} 
                   onChange={e => setCompareTargetId(e.target.value)}
-                  className="bg-zinc-950 border border-zinc-800 text-xs p-1.5 rounded-lg text-zinc-300 outline-none font-bold"
+                  className="bg-zinc-50 border border-zinc-200 text-xs p-1.5 rounded-lg text-zinc-700 outline-none font-bold cursor-pointer"
                 >
                   <option value="">Select Version</option>
                   {resumes.filter(r => r.id !== activeResume.id).map(r => (
@@ -498,11 +699,11 @@ export const ResumeStudio: React.FC = () => {
                 </select>
               </div>
               {compareTargetResume ? (
-                <div className="relative overflow-x-auto p-2 bg-zinc-950 rounded-lg flex-1">
+                <div className="relative overflow-x-auto p-4 bg-zinc-50 border border-zinc-200 rounded-lg flex-1">
                   <Preview activeResume={compareTargetResume} userProfile={userProfile} zoom={0.65} />
                 </div>
               ) : (
-                <div className="flex-1 flex items-center justify-center text-zinc-550 italic text-xs border border-dashed border-zinc-800 rounded-lg bg-zinc-950/20">
+                <div className="flex-1 flex items-center justify-center text-zinc-400 italic text-xs border border-dashed border-zinc-200 rounded-lg bg-zinc-50/50">
                   Select a target version to compare side-by-side.
                 </div>
               )}
