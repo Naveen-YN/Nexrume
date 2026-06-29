@@ -9,7 +9,7 @@ import {
   Compass, Library, ExternalLink, RefreshCw,
   FileText, Music, Home as HomeIcon, Folder, Newspaper, Share2, 
   Brain, Puzzle, Pencil, MousePointer, Atom, Luggage, Bike, Sparkles,
-  Lightbulb, Flag
+  Lightbulb, Flag, ArrowUpDown, Link as LinkIcon
 } from 'lucide-react';
 import { FaLinkedin, FaGithub } from 'react-icons/fa';
 import { AddContentModal } from './add-content-modal';
@@ -877,7 +877,14 @@ export const EditorContent: React.FC<EditorContentProps> = ({
               return (
                 <div 
                   key={field.id} 
-                  className="space-y-1 relative"
+                  draggable
+                  onDragStart={(e) => setDraggedContactIndex(index)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnd={() => setDraggedContactIndex(null)}
+                  onDrop={() => handleContactFieldDrop(index)}
+                  className={`space-y-1 relative group transition-all duration-250 ${
+                    draggedContactIndex === index ? 'opacity-30 scale-[0.98]' : ''
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     {field.field === 'custom' ? (
@@ -894,7 +901,7 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                     {!isDefaultField && (
                       <button
                         onClick={() => removeSocialField(field.id)}
-                        className="text-rose-500 hover:text-rose-400 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                        className="text-rose-500 hover:text-rose-400 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-200"
                         type="button"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -911,7 +918,7 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                         value={field.value}
                         onChange={e => updateSocialFieldVal(field.id, e.target.value)}
                         className={`w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px] ${
-                          isLink ? 'pr-16' : 'pr-10'
+                          isLink ? 'pr-20' : 'pr-10'
                         }`}
                       />
 
@@ -920,34 +927,24 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                         <button
                           type="button"
                           onClick={() => setEditingLinkId(editingLinkId === field.id ? null : field.id)}
-                          className="absolute right-2 top-1.5 bg-indigo-650/15 border border-indigo-500/35 hover:bg-indigo-650/30 text-indigo-400 text-[9.5px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition"
+                          className="absolute right-2 top-1.5 bg-indigo-50/10 border border-indigo-500 hover:bg-indigo-50/20 text-indigo-400 text-[9.5px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition"
                         >
-                          <Globe className="w-3 h-3" />
+                          <LinkIcon className="w-3.5 h-3.5" />
                           <span>Link</span>
                         </button>
                       )}
                     </div>
 
                     {/* Drag / Reorder handle on the right */}
-                    <div className="flex gap-0.5 shrink-0">
-                      <button
-                        onClick={() => moveSocialField(index, 'up')}
-                        disabled={index === 0}
-                        className="text-zinc-550 hover:text-zinc-350 p-1 disabled:opacity-20 cursor-pointer"
-                        type="button"
-                        title="Move Up"
-                      >
-                        <ChevronUp className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => moveSocialField(index, 'down')}
-                        disabled={index === socialFields.length - 1}
-                        className="text-zinc-550 hover:text-zinc-350 p-1 disabled:opacity-20 cursor-pointer"
-                        type="button"
-                        title="Move Down"
-                      >
-                        <ChevronDown className="w-4 h-4" />
-                      </button>
+                    <div className="flex items-center justify-center shrink-0 w-8 h-10 select-none relative group/handle cursor-grab active:cursor-grabbing">
+                      <ArrowUpDown className="w-4 h-4 text-zinc-550 hover:text-zinc-350 transition-colors" />
+                      
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full right-0 mb-1.5 hidden group-hover/handle:block bg-white border border-zinc-200 text-zinc-800 text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-xl whitespace-nowrap z-20 pointer-events-none transition-all duration-200">
+                        <span>Drag to reorder</span>
+                        {/* Little arrow at the bottom of tooltip */}
+                        <div className="w-2 h-2 bg-white border-r border-b border-zinc-200 rotate-45 absolute top-full left-1/2 -translate-x-1/2 -translate-y-1" />
+                      </div>
                     </div>
 
                     {/* Popover overlay for actual Link URL */}
