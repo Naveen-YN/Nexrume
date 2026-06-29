@@ -8,8 +8,10 @@ import {
   Bookmark, CheckCircle, Trophy, Users, Landmark, PenTool, 
   Compass, Library, ExternalLink, RefreshCw,
   FileText, Music, Home as HomeIcon, Folder, Newspaper, Share2, 
-  Brain, Puzzle, Pencil, MousePointer, Atom, Luggage, Bike, Sparkles
+  Brain, Puzzle, Pencil, MousePointer, Atom, Luggage, Bike, Sparkles,
+  Lightbulb, Flag
 } from 'lucide-react';
+import { FaLinkedin, FaGithub } from 'react-icons/fa';
 import { AddContentModal } from './add-content-modal';
 import { RichTextEditor } from './rich-text-editor';
 
@@ -690,296 +692,323 @@ export const EditorContent: React.FC<EditorContentProps> = ({
 
   return (
     <div className="space-y-6">
-      
-      {/* 1. PERSONAL DETAILS CARD */}
-      <div className="bg-zinc-950 border border-zinc-850 rounded-xl overflow-hidden shadow-sm">
-        {/* Header bar */}
-        <button 
-          onClick={() => toggleSectionCollapse('personal')}
-          className="w-full flex items-center justify-between p-4 bg-zinc-900 border-b border-zinc-850 hover:bg-zinc-850/60 transition cursor-pointer select-none"
-        >
-          <div className="flex items-center gap-2.5">
-            <User className="w-5 h-5 text-indigo-400" />
-            <span className="text-xs font-black text-white uppercase tracking-wider">Personal Information & Photo</span>
-          </div>
-          <div>
-            {expandedSections.personal ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
-          </div>
-        </button>
+         {/* 1. PERSONAL DETAILS CARD */}
+      {!expandedSections.personal ? (
+        <div className="bg-zinc-950 border border-zinc-850 rounded-xl p-5 shadow-sm relative group hover:border-zinc-800 transition">
+          {/* Edit pencil button top right */}
+          <button
+            onClick={() => toggleSectionCollapse('personal')}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-rose-500 hover:bg-rose-600 flex items-center justify-center cursor-pointer transition shadow-md hover:scale-105 active:scale-95 z-10"
+            title="Edit Personal Details"
+          >
+            <Pencil className="w-3.5 h-3.5 text-white" />
+          </button>
 
-        {expandedSections.personal && (
-          <div className="p-5 space-y-5 animate-fade-in text-xs">
-            {/* Profile Photo Editor Block */}
-            <div className="bg-zinc-900 border border-zinc-850 p-4 rounded-xl space-y-4">
-              <span className="text-[10px] font-black text-zinc-400 block uppercase tracking-wider">Profile Photo</span>
-              <div className="flex flex-col sm:flex-row items-center gap-5">
-                {/* Drag and Drop preview circle */}
-                <div 
-                  onDragOver={handlePhotoDragOver}
-                  onDragLeave={handlePhotoDragLeave}
-                  onDrop={handlePhotoDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`w-24 h-24 border-2 border-dashed rounded-xl flex items-center justify-center shrink-0 overflow-hidden relative cursor-pointer group transition-all duration-300 ${
-                    isPhotoDragging ? 'border-indigo-500 bg-indigo-950/20' : 'border-zinc-800 bg-zinc-950 hover:border-zinc-700'
-                  }`}
-                  style={{ borderRadius: activeResume.photoStyle === 'circle' ? '50%' : activeResume.photoStyle === 'rounded' ? '16px' : '0px' }}
-                >
-                  {activeResume.personalPhoto ? (
-                    <img 
-                      src={activeResume.personalPhoto} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover pointer-events-none select-none"
-                    />
-                  ) : (
-                    <div className="text-center p-2 text-zinc-650 flex flex-col items-center gap-1.5 select-none pointer-events-none">
-                      <Image className="w-6 h-6" />
-                      <span className="text-[8px] font-black uppercase tracking-wider">Drag here</span>
-                    </div>
-                  )}
-                  {/* Overlay upload prompt */}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition select-none">
-                    <Upload className="w-5 h-5 text-indigo-400" />
-                  </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 pr-10">
+            {/* Left side: Information */}
+            <div className="space-y-3 flex-1 min-w-0">
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-wider truncate">
+                  {getEditorFieldValue('personalName') || 'Your Full Name'}
+                </h3>
+                {getEditorFieldValue('personalTitle') && (
+                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mt-0.5 truncate">
+                    {getEditorFieldValue('personalTitle')}
+                  </p>
+                )}
+              </div>
+
+              {/* Active contact channels list */}
+              {socialFields.filter(f => !f.hidden && f.value?.trim()).length > 0 ? (
+                <div className="flex flex-wrap gap-x-4 gap-y-2 text-[10.5px] text-zinc-400 font-medium">
+                  {socialFields
+                    .filter(f => !f.hidden && f.value?.trim())
+                    .map(field => {
+                      const getCollapsedFieldIcon = (fieldKey: string) => {
+                        switch (fieldKey) {
+                          case 'email': return <Mail className="w-3.5 h-3.5 text-indigo-400 shrink-0" />;
+                          case 'phone': return <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
+                          case 'location': return <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />;
+                          case 'linkedin': return <FaLinkedin className="w-3.5 h-3.5 text-blue-400 shrink-0" />;
+                          case 'github': return <FaGithub className="w-3.5 h-3.5 text-zinc-300 shrink-0" />;
+                          case 'website':
+                          case 'portfolio':
+                            return <Globe className="w-3.5 h-3.5 text-teal-400 shrink-0" />;
+                          case 'nationality': return <Flag className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
+                          case 'dob': return <Calendar className="w-3.5 h-3.5 text-purple-400 shrink-0" />;
+                          case 'visa': return <Shield className="w-3.5 h-3.5 text-green-400 shrink-0" />;
+                          case 'availability': return <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />;
+                          default: return <Info className="w-3.5 h-3.5 text-zinc-400 shrink-0" />;
+                        }
+                      };
+                      return (
+                        <div key={field.id} className="flex items-center gap-1.5 bg-zinc-900/40 border border-zinc-850/60 px-2.5 py-1 rounded-lg max-w-full">
+                          {getCollapsedFieldIcon(field.field)}
+                          <span className="truncate max-w-[180px]">{field.value}</span>
+                        </div>
+                      );
+                    })}
                 </div>
+              ) : (
+                <p className="text-[10.5px] text-zinc-550 italic">No contact information added yet.</p>
+              )}
+            </div>
 
-                <div className="flex-1 space-y-3 w-full">
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="bg-zinc-950 border border-zinc-800 hover:border-zinc-700 text-[10px] font-black uppercase tracking-wider text-zinc-300 px-3 py-2 rounded-lg flex items-center gap-1.5 cursor-pointer transition"
-                    >
-                      <Upload className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>{activeResume.personalPhoto ? 'Replace Image' : 'Select Image'}</span>
-                    </button>
-                    <input 
-                      type="file" 
-                      ref={fileInputRef}
-                      accept="image/*" 
-                      onChange={handlePhotoUpload} 
-                      className="hidden" 
-                    />
+            {/* Right side: Photo */}
+            {activeResume.personalPhoto && activeResume.showPhoto !== false && (
+              <div 
+                className="w-14 h-14 border border-zinc-800 bg-zinc-950 overflow-hidden shrink-0"
+                style={{ borderRadius: activeResume.photoStyle === 'circle' ? '50%' : activeResume.photoStyle === 'rounded' ? '8px' : '0px' }}
+              >
+                <img 
+                  src={activeResume.personalPhoto} 
+                  alt="Preview" 
+                  className="w-full h-full object-cover pointer-events-none select-none"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* Expanded Edit Form */
+        <div className="bg-zinc-950 border border-zinc-850 rounded-xl p-5 shadow-sm space-y-5">
+          {/* Header */}
+          <div className="flex justify-between items-center border-b border-zinc-900 pb-3">
+            <div className="flex items-center gap-2">
+              <User className="w-5 h-5 text-indigo-400" />
+              <h3 className="text-xs font-black text-white uppercase tracking-wider">Edit Personal Details</h3>
+            </div>
+            <div className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 transition cursor-pointer text-[10px] font-black uppercase tracking-wider select-none">
+              <Lightbulb className="w-3.5 h-3.5" />
+              <span>Get Tips</span>
+            </div>
+          </div>
+
+          {/* Form details & Photo row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {/* Left inputs */}
+            <div className="sm:col-span-2 space-y-3.5">
+              <div className="space-y-1">
+                <label className="text-zinc-450 font-black block text-[10px] uppercase tracking-wider">Full Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Alex Dev"
+                  value={getEditorFieldValue('personalName')}
+                  onChange={e => onUpdateResume({ personalName: e.target.value })}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px]"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-zinc-450 font-black block text-[10px] uppercase tracking-wider">Professional Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Senior Software Engineer"
+                  value={getEditorFieldValue('personalTitle')}
+                  onChange={e => onUpdateResume({ personalTitle: e.target.value })}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px]"
+                />
+              </div>
+            </div>
+
+            {/* Right: Photo editor */}
+            <div className="sm:col-span-1 bg-zinc-900/40 border border-zinc-850 p-4 rounded-xl flex flex-col items-center justify-center space-y-2 relative">
+              <label className="text-zinc-450 font-black block text-[9px] uppercase tracking-wider absolute top-2 left-3">Photo</label>
+              
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-16 h-16 border border-zinc-800 bg-zinc-950 hover:border-zinc-700 flex items-center justify-center overflow-hidden relative cursor-pointer transition-all mt-2"
+                style={{ borderRadius: activeResume.photoStyle === 'circle' ? '50%' : activeResume.photoStyle === 'rounded' ? '12px' : '0px' }}
+              >
+                {activeResume.personalPhoto ? (
+                  <img 
+                    src={activeResume.personalPhoto} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover pointer-events-none select-none"
+                  />
+                ) : (
+                  <Image className="w-5 h-5 text-zinc-650" />
+                )}
+              </div>
+
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-zinc-950 border border-zinc-800 hover:border-zinc-750 text-[9px] font-black uppercase tracking-wider text-zinc-350 px-2 py-1 rounded transition cursor-pointer"
+                >
+                  {activeResume.personalPhoto ? 'Replace' : 'Upload'}
+                </button>
+                {activeResume.personalPhoto && (
+                  <button
+                    onClick={() => onUpdateResume({ personalPhoto: '' })}
+                    className="bg-zinc-950 border border-transparent text-[9px] font-black uppercase tracking-wider text-rose-500 px-2 py-1 rounded hover:bg-rose-955/20 transition cursor-pointer"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                accept="image/*" 
+                onChange={handlePhotoUpload} 
+                className="hidden" 
+              />
+            </div>
+          </div>
+
+          {/* Social / Contact fields list */}
+          <div className="space-y-3 pt-3 border-t border-zinc-900">
+            {socialFields.map((field, index) => {
+              const matchedCfg = allOptionalFields.find(f => f.field === field.field);
+              const isLink = isLinkField(field.field);
+              const isDefaultField = ['email', 'phone', 'location'].includes(field.field);
+
+              return (
+                <div 
+                  key={field.id} 
+                  className="space-y-1 relative"
+                >
+                  <div className="flex items-center justify-between">
+                    {field.field === 'custom' ? (
+                      <input 
+                        type="text"
+                        value={field.label}
+                        onChange={e => updateSocialFieldLabel(field.id, e.target.value)}
+                        className="bg-transparent border-b border-zinc-800 outline-none text-[10px] font-black uppercase text-indigo-400 focus:border-indigo-500 w-32"
+                      />
+                    ) : (
+                      <span className="text-zinc-450 font-black block text-[10px] uppercase tracking-wider">{field.label}</span>
+                    )}
                     
-                    {activeResume.personalPhoto && (
+                    {!isDefaultField && (
                       <button
-                        onClick={() => onUpdateResume({ personalPhoto: '' })}
-                        className="bg-zinc-950 border border-transparent hover:border-rose-900/35 hover:bg-rose-955/20 text-[10px] font-black uppercase tracking-wider text-rose-500 px-3 py-2 rounded-lg transition cursor-pointer"
+                        onClick={() => removeSocialField(field.id)}
+                        className="text-rose-500 hover:text-rose-400 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                        type="button"
                       >
-                        Remove
+                        <Trash2 className="w-3 h-3" />
+                        <span>Remove Field</span>
                       </button>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 items-center">
-                    <label className="flex items-center gap-2 cursor-pointer text-zinc-400 select-none">
+                  <div className="flex items-center gap-2 relative">
+                    <div className="relative flex-1">
                       <input 
-                        type="checkbox" 
-                        checked={!!activeResume.showPhoto} 
-                        onChange={e => onUpdateResume({ showPhoto: e.target.checked })} 
-                        className="rounded accent-indigo-650"
+                        type="text"
+                        placeholder={matchedCfg?.placeholder || `e.g. enter ${field.label.toLowerCase()}`}
+                        value={field.value}
+                        onChange={e => updateSocialFieldVal(field.id, e.target.value)}
+                        className={`w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px] ${
+                          isLink ? 'pr-16' : 'pr-10'
+                        }`}
                       />
-                      <span>Show Photo in Resume</span>
-                    </label>
 
-                    {/* Shapes */}
-                    <div className="flex items-center gap-2 justify-end">
-                      <span className="text-zinc-550 font-black text-[9px] uppercase tracking-wider">Shape:</span>
-                      <div className="flex bg-zinc-950 p-0.5 rounded border border-zinc-800 text-[9px] font-black uppercase tracking-wider">
-                        {[
-                          { id: 'circle', label: 'Circle' },
-                          { id: 'rounded', label: 'Rounded' },
-                          { id: 'square', label: 'Square' }
-                        ].map(shape => (
-                          <button
-                            key={shape.id}
-                            onClick={() => onUpdateResume({ photoStyle: shape.id as any })}
-                            className={`px-2 py-1 rounded cursor-pointer transition ${
-                              (activeResume.photoStyle || 'circle') === shape.id 
-                                ? 'bg-indigo-650 text-white shadow' 
-                                : 'text-zinc-550 hover:text-zinc-350'
-                            }`}
-                          >
-                            {shape.label}
-                          </button>
-                        ))}
-                      </div>
+                      {/* Link button inside the input */}
+                      {isLink && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingLinkId(editingLinkId === field.id ? null : field.id)}
+                          className="absolute right-2 top-1.5 bg-indigo-650/15 border border-indigo-500/35 hover:bg-indigo-650/30 text-indigo-400 text-[9.5px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition"
+                        >
+                          <Globe className="w-3 h-3" />
+                          <span>Link</span>
+                        </button>
+                      )}
                     </div>
-                  </div>
 
-                  {/* Size slider */}
-                  <div className="flex items-center gap-3">
-                    <span className="text-zinc-555 font-black text-[9px] uppercase tracking-wider shrink-0">Photo Size:</span>
-                    <input
-                      type="range"
-                      min={40}
-                      max={150}
-                      value={activeResume.photoSize || 80}
-                      onChange={e => onUpdateResume({ photoSize: parseInt(e.target.value) })}
-                      className="w-full h-1 bg-zinc-950 rounded-lg appearance-none cursor-pointer accent-indigo-650"
-                    />
-                    <span className="text-[10px] font-mono text-zinc-400 w-10 shrink-0">{activeResume.photoSize || 80}px</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Core details fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                { label: 'Full Name', field: 'personalName', placeholder: 'e.g. Alex Dev' },
-                { label: 'Job Title / Professional Headline', field: 'personalTitle', placeholder: 'e.g. Senior Software Engineer' }
-              ].map(col => (
-                <div key={col.field} className="space-y-1">
-                  <label className="text-zinc-450 font-black block text-[10px] uppercase tracking-wider">{col.label}</label>
-                  <input
-                    type="text"
-                    placeholder={col.placeholder}
-                    value={getEditorFieldValue(col.field)}
-                    onChange={e => onUpdateResume({ [col.field]: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px]"
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Optional / Dynamic social links */}
-            {socialFields.length > 0 && (
-              <div className="space-y-3.5 pt-3 border-t border-zinc-900">
-                <span className="text-[10px] font-black text-zinc-400 block uppercase tracking-wider">Additional Contact Channels</span>
-                <span className="text-[9.5px] text-zinc-550 block -mt-2">
-                  Tip: For links, specify the Display Text (e.g. your name/username) and the Link URL.
-                </span>
-                <div className="space-y-3">
-                  {socialFields.map((field, index) => {
-                    const matchedCfg = allOptionalFields.find(f => f.field === field.field);
-                    const isLink = isLinkField(field.field);
-                    return (
-                      <div 
-                        key={field.id} 
-                        className="flex flex-col gap-2 bg-zinc-900/50 border border-zinc-850 p-3 rounded-xl transition hover:border-zinc-800"
+                    {/* Drag / Reorder handle on the right */}
+                    <div className="flex gap-0.5 shrink-0">
+                      <button
+                        onClick={() => moveSocialField(index, 'up')}
+                        disabled={index === 0}
+                        className="text-zinc-550 hover:text-zinc-350 p-1 disabled:opacity-20 cursor-pointer"
+                        type="button"
+                        title="Move Up"
                       >
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-0.5 shrink-0">
-                            <button
-                              onClick={() => moveSocialField(index, 'up')}
-                              disabled={index === 0}
-                              className="text-zinc-550 hover:text-zinc-350 p-0.5 disabled:opacity-20 cursor-pointer"
-                              type="button"
-                            >
-                              <ChevronUp className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => moveSocialField(index, 'down')}
-                              disabled={index === socialFields.length - 1}
-                              className="text-zinc-550 hover:text-zinc-350 p-0.5 disabled:opacity-20 cursor-pointer"
-                              type="button"
-                            >
-                              <ChevronDown className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                        <ChevronUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => moveSocialField(index, 'down')}
+                        disabled={index === socialFields.length - 1}
+                        className="text-zinc-550 hover:text-zinc-350 p-1 disabled:opacity-20 cursor-pointer"
+                        type="button"
+                        title="Move Down"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                    </div>
 
-                          <div className="w-24 text-[10px] font-black uppercase text-zinc-400 truncate shrink-0">
-                            {field.field === 'custom' ? (
-                              <input 
-                                type="text"
-                                value={field.label}
-                                onChange={e => updateSocialFieldLabel(field.id, e.target.value)}
-                                className="w-full bg-transparent border-b border-zinc-800 outline-none text-[10px] font-black uppercase text-indigo-400 focus:border-indigo-500"
-                              />
-                            ) : (
-                              field.label
-                            )}
-                          </div>
-
-                          <div className="flex-1"></div>
-
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              onClick={() => toggleSocialFieldHide(field.id)}
-                              className="text-zinc-550 hover:text-zinc-350 p-1 cursor-pointer"
-                              title={field.hidden ? "Show on Resume" : "Hide from Resume"}
-                              type="button"
-                            >
-                              {field.hidden ? <EyeOff className="w-3.5 h-3.5 text-rose-500" /> : <Eye className="w-3.5 h-3.5 text-emerald-500" />}
-                            </button>
-                            <button
-                              onClick={() => removeSocialField(field.id)}
-                              className="text-rose-500 hover:text-rose-400 p-1 cursor-pointer"
-                              title="Remove field"
-                              type="button"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                    {/* Popover overlay for actual Link URL */}
+                    {editingLinkId === field.id && (
+                      <div className="absolute right-12 top-[-75px] bg-zinc-900 border border-zinc-800 rounded-xl p-3 shadow-2xl z-50 w-64 space-y-2.5 animate-scale-in">
+                        <div className="flex justify-between items-center border-b border-zinc-850 pb-1">
+                          <span className="text-[9px] font-black uppercase tracking-wider text-zinc-400">Link URL</span>
+                          <button
+                            type="button"
+                            onClick={() => setEditingLinkId(null)}
+                            className="text-zinc-500 hover:text-zinc-300 font-bold"
+                          >
+                            &times;
+                          </button>
                         </div>
-
-                        <div className="w-full">
-                          {isLink ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              <div>
-                                <label className="block text-[8.5px] font-black text-zinc-550 uppercase mb-1">Display Text</label>
-                                <input 
-                                  type="text"
-                                  placeholder="e.g. My Website"
-                                  value={field.value}
-                                  onChange={e => updateSocialFieldVal(field.id, e.target.value)}
-                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg p-1.5 text-zinc-300 outline-none focus:border-indigo-500 text-[10.5px]"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[8.5px] font-black text-zinc-550 uppercase mb-1">Link URL</label>
-                                <input 
-                                  type="text"
-                                  placeholder={matchedCfg?.placeholder || "e.g. website.com"}
-                                  value={field.linkUrl || ''}
-                                  onChange={e => updateSocialFieldLinkUrl(field.id, e.target.value)}
-                                  className="w-full bg-zinc-950 border border-zinc-850 rounded-lg p-1.5 text-zinc-300 outline-none focus:border-indigo-500 text-[10.5px]"
-                                />
-                              </div>
-                            </div>
-                          ) : (
-                            <div>
-                              <label className="block text-[8.5px] font-black text-zinc-550 uppercase mb-1">Value</label>
-                              <input 
-                                type="text"
-                                placeholder={matchedCfg?.placeholder || 'e.g. details'}
-                                value={field.value}
-                                onChange={e => updateSocialFieldVal(field.id, e.target.value)}
-                                className="w-full bg-zinc-950 border border-zinc-850 rounded-lg p-1.5 text-zinc-300 outline-none focus:border-indigo-500 text-[10.5px]"
-                              />
-                            </div>
-                          )}
+                        <div className="flex items-center gap-1.5">
+                          <input 
+                            type="text"
+                            placeholder={matchedCfg?.placeholder || "https://..."}
+                            value={field.linkUrl || ''}
+                            onChange={e => updateSocialFieldLinkUrl(field.id, e.target.value)}
+                            className="flex-1 bg-zinc-950 border border-zinc-850 rounded-lg p-2 text-zinc-300 outline-none focus:border-indigo-500 text-[10.5px]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setEditingLinkId(null)}
+                            className="bg-indigo-650 hover:bg-indigo-600 rounded-lg p-2 text-white flex items-center justify-center cursor-pointer transition shadow"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
-                    );
-                  })}
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })}
+          </div>
 
-            {/* Dropdown to add optional fields */}
-            <div className="pt-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-zinc-550 uppercase tracking-wider">Add fields:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {allOptionalFields.map(opt => {
-                    const alreadyAdded = socialFields.some(f => f.field === opt.field && opt.field !== 'custom');
-                    if (alreadyAdded) return null;
-                    return (
-                      <button
-                        key={opt.field}
-                        onClick={() => addSocialField(opt.field)}
-                        className="bg-zinc-900 border border-zinc-850 hover:border-zinc-750 text-[9.5px] text-zinc-400 px-2.5 py-1.5 rounded-lg transition font-semibold cursor-pointer active:scale-[0.98]"
-                      >
-                        + {opt.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+          {/* Add details list of buttons */}
+          <div className="pt-2 border-t border-zinc-900 space-y-2">
+            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider block">Add details</span>
+            <div className="flex flex-wrap gap-1.5">
+              {allOptionalFields.map(opt => {
+                const alreadyAdded = socialFields.some(f => f.field === opt.field && opt.field !== 'custom');
+                if (alreadyAdded) return null;
+                return (
+                  <button
+                    key={opt.field}
+                    onClick={() => addSocialField(opt.field)}
+                    className="bg-zinc-900 border border-zinc-850 hover:border-zinc-750 text-[9.5px] text-zinc-400 px-2.5 py-1.5 rounded-lg transition font-semibold cursor-pointer active:scale-[0.98] flex items-center gap-1"
+                  >
+                    <span>+</span>
+                    <span>{opt.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Done Button */}
+          <div className="pt-3 flex justify-center border-t border-zinc-900">
+            <button
+              onClick={() => toggleSectionCollapse('personal')}
+              className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white text-[11px] font-black uppercase tracking-wider py-2.5 px-10 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-md shadow-rose-950/20 active:scale-[0.98]"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Done</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 2. COLLAPSIBLE SECTIONS LIST */}
       <div className="space-y-4">
