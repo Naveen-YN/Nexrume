@@ -9,7 +9,7 @@ import {
   Compass, Library, ExternalLink, RefreshCw,
   FileText, Music, Home as HomeIcon, Folder, Newspaper, Share2, 
   Brain, Puzzle, Pencil, MousePointer, Atom, Luggage, Bike, Sparkles,
-  Lightbulb, Flag, ArrowUpDown, Link as LinkIcon
+  Lightbulb, Flag, ArrowUpDown, Link as LinkIcon, X
 } from 'lucide-react';
 import { FaLinkedin, FaGithub } from 'react-icons/fa';
 import { AddContentModal } from './add-content-modal';
@@ -172,6 +172,258 @@ export const EditorContent: React.FC<EditorContentProps> = ({
       setTempStyle(activeResume.photoStyle || 'circle');
     }
   }, [isPhotoModalOpen, activeResume.personalPhoto, activeResume.photoZoom, activeResume.photoStyle]);
+
+  const [activeEditingEntry, setActiveEditingEntry] = useState<{
+    sectionId: string;
+    entryId: string;
+    index: number;
+    title: string;
+    subtitle: string;
+    startDate: string;
+    endDate: string;
+    location: string;
+    description: string;
+    link?: string;
+    hidden: boolean;
+  } | null>(null);
+
+  const [isEditingEntryLink, setIsEditingEntryLink] = useState(false);
+  const [draggedEntryIdx, setDraggedEntryIdx] = useState<{ sectionId: string; index: number } | null>(null);
+
+  const getSectionList = (sectionId: string): any[] => {
+    if (sectionId === 'summary') {
+      const summaryData = activeResume.summary || '';
+      if (summaryData.trim().startsWith('[')) {
+        try {
+          return JSON.parse(summaryData);
+        } catch (e) {}
+      }
+      const lines = summaryData.split('\n').filter(l => l.trim() !== '');
+      return lines.map((line, idx) => {
+        const isHidden = line.startsWith('[HIDDEN]');
+        const cleanLine = line.replace('[HIDDEN]', '').trim();
+        return { id: `sum-${idx}`, title: '', description: cleanLine, hidden: isHidden };
+      });
+    }
+
+    if (sectionId === 'experience') {
+      const expData = activeResume.experience || '';
+      if (expData.trim().startsWith('[')) {
+        try {
+          return JSON.parse(expData);
+        } catch (e) {}
+      }
+      const lines = expData.split('\n').filter(l => l.trim() !== '');
+      return lines.map((line, idx) => {
+        const isHidden = line.startsWith('[HIDDEN]');
+        const cleanLine = line.replace('[HIDDEN]', '').trim();
+        const match = cleanLine.match(/^(.+?)\s+at\s+(.+?)\s*\((.+?)\):\s*(.+)$/);
+        if (match) {
+          return { id: `exp-${idx}`, role: match[1].trim(), company: match[2].trim(), duration: match[3].trim(), description: match[4].trim(), hidden: isHidden };
+        }
+        return { id: `exp-${idx}`, role: '', company: '', duration: '', description: cleanLine, hidden: isHidden };
+      });
+    }
+
+    if (sectionId === 'projects') {
+      const projData = activeResume.projects || '';
+      if (projData.trim().startsWith('[')) {
+        try {
+          return JSON.parse(projData);
+        } catch (e) {}
+      }
+      const lines = projData.split('\n').filter(l => l.trim() !== '');
+      return lines.map((line, idx) => {
+        const isHidden = line.startsWith('[HIDDEN]');
+        const cleanLine = line.replace('[HIDDEN]', '').trim();
+        const colonIndex = cleanLine.indexOf(':');
+        if (colonIndex > 0) {
+          return {
+            id: `proj-${idx}`,
+            title: cleanLine.substring(0, colonIndex).trim(),
+            description: cleanLine.substring(colonIndex + 1).trim(),
+            hidden: isHidden
+          };
+        }
+        return { id: `proj-${idx}`, title: '', description: cleanLine, hidden: isHidden };
+      });
+    }
+
+    if (sectionId.startsWith('custom-')) {
+      const found = (activeResume.customSections || []).find(cs => cs.id === sectionId);
+      if (!found) return [];
+      if (found.content && found.content.trim().startsWith('[')) {
+        try {
+          return JSON.parse(found.content);
+        } catch (e) {}
+      }
+      if (found.content) {
+        return [{ id: `custom-0`, title: '', description: found.content, hidden: false }];
+      }
+      return [];
+    }
+
+    return [];
+  };
+
+  const syncSectionList = (sectionId: string, list: any[]) => {
+    const jsonStr = JSON.stringify(list);
+    if (sectionId === 'summary') {
+      onUpdateResume({ summary: jsonStr });
+    } else if (sectionId === 'experience') {
+      onUpdateResume({ experience: jsonStr });
+    } else if (sectionId === 'projects') {
+      onUpdateResume({ projects: jsonStr });
+    } else if (sectionId.startsWith('custom-')) {
+      onUpdateResume({
+        customSections: (activeResume.customSections || []).map(cs => 
+          cs.id === sectionId ? { ...cs, content: jsonStr } : cs
+        )
+      });
+    }
+  };
+
+  const renderSectionEntriesList = (sectionId: string) => {
+    const list = getSectionList(sectionId);
+    const getEntryLabel = (entry: any, index: number) => {
+      if (sectionId === 'summary') {
+        const cleanText = entry.description ? entry.description.replace(/<[^>]*>/g, '') : '';
+        return cleanText.substring(0, 70) || `Summary Point #${index + 1}`;
+      }
+      if (sectionId === 'experience') {
+        if (entry.role && entry.company) return `${entry.role} at ${entry.company}`;
+        if (entry.description) return entry.description.replace(/<[^>]*>/g, '').substring(0, 70);
+        return `Work Entry #${index + 1}`;
+      }
+      if (sectionId === 'projects') {
+        if (entry.title) return entry.title;
+        if (entry.description) return entry.description.replace(/<[^>]*>/g, '').substring(0, 70);
+        return `Project Entry #${index + 1}`;
+      }
+      if (entry.title) return entry.title;
+      if (entry.description) return entry.description.replace(/<[^>]*>/g, '').substring(0, 70);
+      return `Entry #${index + 1}`;
+    };
+
+    return (
+      <div className="space-y-0.5 border border-zinc-850 rounded-xl overflow-hidden bg-zinc-950">
+        {list.length > 0 ? (
+          list.map((entry, idx) => (
+            <div 
+              key={entry.id || idx} 
+              className="flex items-center justify-between p-3.5 border-b border-zinc-900 last:border-b-0 hover:bg-zinc-900/30 transition group select-none"
+              draggable={true}
+              onDragStart={() => setDraggedEntryIdx({ sectionId, index: idx })}
+              onDragOver={e => e.preventDefault()}
+              onDrop={() => {
+                if (draggedEntryIdx && draggedEntryIdx.sectionId === sectionId) {
+                  const targetIdx = idx;
+                  const sourceIdx = draggedEntryIdx.index;
+                  if (sourceIdx !== targetIdx) {
+                    const updated = [...list];
+                    const temp = updated[sourceIdx];
+                    updated[sourceIdx] = updated[targetIdx];
+                    updated[targetIdx] = temp;
+                    syncSectionList(sectionId, updated);
+                  }
+                }
+                setDraggedEntryIdx(null);
+              }}
+            >
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="cursor-grab active:cursor-grabbing text-zinc-650 hover:text-zinc-400 p-0.5">
+                  <GripVertical className="w-4 h-4" />
+                </div>
+                
+                <div 
+                  onClick={() => setActiveEditingEntry({
+                    sectionId,
+                    entryId: entry.id || `entry-${idx}`,
+                    index: idx,
+                    title: entry.title || entry.role || '',
+                    subtitle: entry.subtitle || entry.company || '',
+                    startDate: entry.startDate || (entry.duration ? entry.duration.split(' - ')[0] : ''),
+                    endDate: entry.endDate || (entry.duration ? entry.duration.split(' - ')[1] : ''),
+                    location: entry.location || '',
+                    description: entry.description || '',
+                    link: entry.link || '',
+                    hidden: !!entry.hidden
+                  })}
+                  className={`text-[11px] font-bold cursor-pointer hover:text-indigo-400 transition truncate flex-1 ${
+                    entry.hidden ? 'text-zinc-550 line-through opacity-60' : 'text-zinc-300'
+                  }`}
+                >
+                  {getEntryLabel(entry, idx)}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = list.map((item, i) => i === idx ? { ...item, hidden: !item.hidden } : item);
+                  syncSectionList(sectionId, updated);
+                }}
+                className="p-1.5 hover:bg-zinc-900 border border-zinc-850 rounded-lg text-zinc-450 hover:text-zinc-300 transition cursor-pointer"
+                title={entry.hidden ? "Show entry" : "Hide entry"}
+              >
+                {entry.hidden ? <EyeOff className="w-3.5 h-3.5 text-rose-500" /> : <Eye className="w-3.5 h-3.5 text-zinc-450" />}
+              </button>
+            </div>
+          ))
+        ) : (
+          <div className="p-4 text-center text-zinc-550 text-[11px] italic">
+            No entries added yet. Click "+ Add Entry" below to start.
+          </div>
+        )}
+
+        <div className="flex justify-between items-center bg-zinc-900/60 p-3 border-t border-zinc-900">
+          <div className="text-zinc-500 p-1">
+            <Calendar className="w-4 h-4" />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const newEntry = {
+                id: `entry-${Date.now()}`,
+                title: sectionId === 'summary' ? 'New Summary Point' : 'New Entry',
+                description: '',
+                hidden: false
+              };
+              const updated = [...list, newEntry];
+              syncSectionList(sectionId, updated);
+              
+              setActiveEditingEntry({
+                sectionId,
+                entryId: newEntry.id,
+                index: updated.length - 1,
+                title: newEntry.title,
+                subtitle: '',
+                startDate: '',
+                endDate: '',
+                location: '',
+                description: '',
+                hidden: false
+              });
+            }}
+            className="bg-zinc-950 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-[10px] font-black uppercase tracking-wider px-4 py-2 rounded-xl flex items-center gap-1.5 transition cursor-pointer active:scale-[0.98]"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Entry</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => deleteSection(sectionId)}
+            className="p-2 hover:bg-rose-955/20 border border-transparent rounded-lg text-rose-500 transition cursor-pointer"
+            title="Delete Section"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const getEditorFieldValue = (field: string) => {
     const val = activeResume[field as keyof ResumeVersion];
@@ -1285,15 +1537,8 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                 <div className="p-5 animate-fade-in space-y-4">
                   {/* Summary Block */}
                   {sectionId === 'summary' && (
-                    <div className="space-y-1.5 text-xs">
-                      <label className="text-zinc-450 font-black block text-[10px] uppercase tracking-wider">Profile Summary Details</label>
-                      <textarea
-                        placeholder="e.g. Results-oriented Software Engineer with 5+ years of experience building scalable systems..."
-                        value={activeResume.summary || ''}
-                        onChange={e => onUpdateResume({ summary: e.target.value })}
-                        rows={5}
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px] leading-relaxed font-mono"
-                      />
+                    <div className="space-y-3.5">
+                      {renderSectionEntriesList('summary')}
                     </div>
                   )}
 
@@ -1314,143 +1559,7 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                   {/* Experience List Block */}
                   {sectionId === 'experience' && (
                     <div className="space-y-3.5">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-zinc-500 font-bold">Entries List</span>
-                        <button
-                          onClick={() => {
-                            const newExp = { id: `exp-${Date.now()}`, role: 'Software Engineer', company: 'Employer Name', duration: 'Start Date - End Date', description: 'Developed core services and systems.' };
-                            syncLegacyList([...expList, newExp], 'exp');
-                          }}
-                          className="bg-indigo-650 hover:bg-indigo-550 text-[10px] font-black uppercase tracking-wider text-white px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer transition active:scale-[0.98]"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Add Work Entry</span>
-                        </button>
-                      </div>
-
-                      <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
-                        {expList.map((exp, idx) => {
-                          const isEntryExpanded = !!expandedEntries[exp.id];
-                          return (
-                            <div key={exp.id} className="bg-zinc-900 border border-zinc-850 rounded-xl overflow-hidden">
-                              <div className="flex justify-between items-center p-3 bg-zinc-950 select-none">
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
-                                    exp.hidden ? 'bg-rose-955/20 border-rose-900/30 text-rose-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400'
-                                  }`}>
-                                    {exp.hidden ? 'Hidden' : `Entry #${idx + 1}`}
-                                  </span>
-                                  <span className="text-[11px] text-zinc-300 font-bold truncate">
-                                    {exp.role ? `${exp.role} at ${exp.company}` : (exp.description?.substring(0, 30) || '')}
-                                  </span>
-                                </div>
-
-                                <div className="flex items-center gap-2.5 shrink-0">
-                                  <button
-                                    onClick={() => {
-                                      const list = [...expList];
-                                      list[idx].hidden = !list[idx].hidden;
-                                      syncLegacyList(list, 'exp');
-                                    }}
-                                    className="text-zinc-550 hover:text-zinc-350 p-0.5 cursor-pointer"
-                                    title={exp.hidden ? "Show in Resume" : "Hide from Resume"}
-                                  >
-                                    {exp.hidden ? <EyeOff className="w-3.5 h-3.5 text-rose-500" /> : <Eye className="w-3.5 h-3.5 text-emerald-500" />}
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      const newCopy = { ...exp, id: `exp-copy-${Date.now()}` };
-                                      syncLegacyList([...expList, newCopy], 'exp');
-                                    }}
-                                    className="text-zinc-550 hover:text-zinc-350 p-0.5 cursor-pointer"
-                                    title="Duplicate Entry"
-                                  >
-                                    <Copy className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      syncLegacyList(expList.filter(item => item.id !== exp.id), 'exp');
-                                    }}
-                                    className="text-rose-500 hover:text-rose-455 p-0.5 cursor-pointer"
-                                    title="Delete Entry"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => toggleEntryCollapse(exp.id)}
-                                    className="text-zinc-500 hover:text-zinc-300 p-0.5 cursor-pointer"
-                                  >
-                                    {isEntryExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                                  </button>
-                                </div>
-                              </div>
-
-                              {isEntryExpanded && (
-                                <div className="p-4 space-y-3 border-t border-zinc-850 text-xs">
-                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <div className="space-y-1">
-                                      <span className="text-zinc-555 font-black uppercase text-[9px]">Role</span>
-                                      <input
-                                        type="text"
-                                        placeholder="e.g. Software Engineer"
-                                        value={exp.role}
-                                        onChange={e => {
-                                          const list = [...expList];
-                                          list[idx].role = e.target.value;
-                                          syncLegacyList(list, 'exp');
-                                        }}
-                                        className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-300 outline-none focus:border-indigo-500"
-                                      />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <span className="text-zinc-555 font-black uppercase text-[9px]">Company / Employer</span>
-                                      <input
-                                        type="text"
-                                        placeholder="e.g. Google"
-                                        value={exp.company}
-                                        onChange={e => {
-                                          const list = [...expList];
-                                          list[idx].company = e.target.value;
-                                          syncLegacyList(list, 'exp');
-                                        }}
-                                        className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-300 outline-none focus:border-indigo-500"
-                                      />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <span className="text-zinc-555 font-black uppercase text-[9px]">Duration (Dates | Location)</span>
-                                      <input
-                                        type="text"
-                                        placeholder="e.g. Jan 2022 - Present | NY"
-                                        value={exp.duration}
-                                        onChange={e => {
-                                          const list = [...expList];
-                                          list[idx].duration = e.target.value;
-                                          syncLegacyList(list, 'exp');
-                                        }}
-                                        className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-300 outline-none focus:border-indigo-500"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <span className="text-zinc-555 font-black uppercase text-[9px]">Description (separate bullets by newline)</span>
-                                    <textarea
-                                      placeholder="Wrote scalable query algorithms..."
-                                      value={exp.description}
-                                      onChange={e => {
-                                        const list = [...expList];
-                                        list[idx].description = e.target.value;
-                                        syncLegacyList(list, 'exp');
-                                      }}
-                                      rows={3}
-                                      className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-300 font-mono outline-none focus:border-indigo-500"
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                      {renderSectionEntriesList('experience')}
                     </div>
                   )}
 
@@ -1628,112 +1737,7 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                   {/* Projects List Block */}
                   {sectionId === 'projects' && (
                     <div className="space-y-3.5">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-zinc-500 font-bold">Entries List</span>
-                        <button
-                          onClick={() => {
-                            const newProj = { id: `proj-${Date.now()}`, title: 'Project Name', description: 'Describe what you built...' };
-                            syncLegacyList([...projList, newProj], 'proj');
-                          }}
-                          className="bg-indigo-650 hover:bg-indigo-550 text-[10px] font-black uppercase tracking-wider text-white px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer transition active:scale-[0.98]"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Add Project</span>
-                        </button>
-                      </div>
-
-                      <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1 scrollbar-thin">
-                        {projList.map((proj, idx) => {
-                          const isEntryExpanded = !!expandedEntries[proj.id];
-                          return (
-                            <div key={proj.id} className="bg-zinc-900 border border-zinc-850 rounded-xl overflow-hidden">
-                              <div className="flex justify-between items-center p-3 bg-zinc-955 select-none">
-                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
-                                    proj.hidden ? 'bg-rose-955/20 border-rose-900/30 text-rose-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400'
-                                  }`}>
-                                    {proj.hidden ? 'Hidden' : `Project #${idx + 1}`}
-                                  </span>
-                                  <span className="text-[11px] text-zinc-300 font-bold truncate">
-                                    {proj.title || 'Empty project title'}
-                                  </span>
-                                </div>
-
-                                <div className="flex items-center gap-2.5 shrink-0">
-                                  <button
-                                    onClick={() => {
-                                      const list = [...projList];
-                                      list[idx].hidden = !list[idx].hidden;
-                                      syncLegacyList(list, 'proj');
-                                    }}
-                                    className="text-zinc-550 hover:text-zinc-350 p-0.5 cursor-pointer"
-                                    title={proj.hidden ? "Show in Resume" : "Hide from Resume"}
-                                  >
-                                    {proj.hidden ? <EyeOff className="w-3.5 h-3.5 text-rose-500" /> : <Eye className="w-3.5 h-3.5 text-emerald-500" />}
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      const newCopy = { ...proj, id: `proj-copy-${Date.now()}` };
-                                      syncLegacyList([...projList, newCopy], 'proj');
-                                    }}
-                                    className="text-zinc-550 hover:text-zinc-350 p-0.5 cursor-pointer"
-                                    title="Duplicate Entry"
-                                  >
-                                    <Copy className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      syncLegacyList(projList.filter(item => item.id !== proj.id), 'proj');
-                                    }}
-                                    className="text-rose-500 hover:text-rose-455 p-0.5 cursor-pointer"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => toggleEntryCollapse(proj.id)}
-                                    className="text-zinc-500 hover:text-zinc-300 p-0.5 cursor-pointer"
-                                  >
-                                    {isEntryExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                                  </button>
-                                </div>
-                              </div>
-
-                              {isEntryExpanded && (
-                                <div className="p-4 space-y-3 border-t border-zinc-850 text-xs">
-                                  <div className="space-y-1">
-                                    <span className="text-zinc-555 font-black uppercase text-[9px]">Project Title</span>
-                                    <input
-                                      type="text"
-                                      placeholder="e.g. E-Commerce Pipeline Platform"
-                                      value={proj.title}
-                                      onChange={e => {
-                                        const list = [...projList];
-                                        list[idx].title = e.target.value;
-                                        syncLegacyList(list, 'proj');
-                                      }}
-                                      className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-300 outline-none focus:border-indigo-500 font-bold"
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <span className="text-zinc-555 font-black uppercase text-[9px]">Description & Tech Stack</span>
-                                    <textarea
-                                      placeholder="Implemented a load balancer scaling to 15k users using Redis, Docker, Node.js..."
-                                      value={proj.description}
-                                      onChange={e => {
-                                        const list = [...projList];
-                                        list[idx].description = e.target.value;
-                                        syncLegacyList(list, 'proj');
-                                      }}
-                                      rows={3}
-                                      className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-zinc-300 font-mono outline-none focus:border-indigo-500"
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                      {renderSectionEntriesList('projects')}
                     </div>
                   )}
 
@@ -2752,19 +2756,9 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                                   );
                                 })()
                               ) : (
-                                <textarea
-                                  placeholder="Write your custom section paragraphs here. You can use normal markdown format..."
-                                  value={cs.content || ''}
-                                  onChange={e => {
-                                    onUpdateResume({
-                                      customSections: (activeResume.customSections || []).map(item => 
-                                        item.id === cs.id ? { ...item, content: e.target.value } : item
-                                      )
-                                    });
-                                  }}
-                                  rows={5}
-                                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px] leading-relaxed font-mono"
-                                />
+                                <div className="space-y-3.5">
+                                  {renderSectionEntriesList(cs.id)}
+                                </div>
                               )}
                             </div>
                           );
@@ -2935,6 +2929,214 @@ export const EditorContent: React.FC<EditorContentProps> = ({
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Entry Modal */}
+      {activeEditingEntry && (
+        <div className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-850 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col animate-scale-in">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-zinc-850 flex items-center justify-between">
+              <span className="text-sm font-black text-white uppercase tracking-wider">Edit Entry</span>
+              
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => alert("Tips for writing entries:\n• Use action verbs (e.g., Led, Developed, Optimized).\n• Quantify your results (e.g., Improved speed by 30%).\n• Keep bullet points concise.")}
+                  className="text-zinc-450 hover:text-zinc-300 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Get Tips</span>
+                </button>
+
+                {/* Show/Hide button */}
+                <button
+                  type="button"
+                  onClick={() => setActiveEditingEntry(prev => prev ? { ...prev, hidden: !prev.hidden } : null)}
+                  className="p-1.5 hover:bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-450 hover:text-zinc-300 transition cursor-pointer"
+                  title={activeEditingEntry.hidden ? "Show in Resume" : "Hide from Resume"}
+                >
+                  {activeEditingEntry.hidden ? <EyeOff className="w-4 h-4 text-rose-500" /> : <Eye className="w-4 h-4 text-zinc-400" />}
+                </button>
+
+                {/* Delete button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm("Delete this entry?")) {
+                      const sectionId = activeEditingEntry.sectionId;
+                      const list = getSectionList(sectionId);
+                      const updated = list.filter((_, i) => i !== activeEditingEntry.index);
+                      syncSectionList(sectionId, updated);
+                      setActiveEditingEntry(null);
+                    }
+                  }}
+                  className="p-1.5 hover:bg-rose-955/20 border border-transparent rounded-lg text-rose-500 transition cursor-pointer"
+                  title="Delete Entry"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={() => setActiveEditingEntry(null)}
+                  className="text-zinc-500 hover:text-zinc-300 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Form Content */}
+            <div className="p-5 space-y-4 flex-1">
+              {activeEditingEntry.sectionId !== 'summary' ? (
+                <>
+                  {/* Title & Link */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <label className="text-zinc-450 font-black block text-[10px] uppercase tracking-wider">
+                        {activeEditingEntry.sectionId === 'experience' ? 'Role' : 'Title'}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingEntryLink(!isEditingEntryLink)}
+                        className={`text-[9px] font-black uppercase tracking-wider border rounded-lg px-2 py-1 flex items-center gap-1 cursor-pointer transition ${
+                          activeEditingEntry.link
+                            ? 'bg-indigo-50/10 border-indigo-500 text-indigo-400'
+                            : 'bg-zinc-950 border-zinc-800 text-zinc-455 hover:text-zinc-300'
+                        }`}
+                      >
+                        <LinkIcon className="w-3 h-3 rotate-45" />
+                        <span>{activeEditingEntry.link ? 'Link Attached' : 'Add Link'}</span>
+                      </button>
+                    </div>
+
+                    {isEditingEntryLink && (
+                      <div className="flex gap-2 animate-fade-in p-2.5 bg-zinc-950 border border-zinc-850 rounded-xl">
+                        <input
+                          type="url"
+                          placeholder="e.g. https://github.com/project"
+                          value={activeEditingEntry.link || ''}
+                          onChange={e => setActiveEditingEntry(prev => prev ? { ...prev, link: e.target.value } : null)}
+                          className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-zinc-300 outline-none text-[11px]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingEntryLink(false)}
+                          className="bg-indigo-650 hover:bg-indigo-550 text-white font-extrabold text-[10px] uppercase px-3 py-1.5 rounded-lg"
+                        >
+                          OK
+                        </button>
+                      </div>
+                    )}
+
+                    <input
+                      type="text"
+                      placeholder={activeEditingEntry.sectionId === 'experience' ? 'e.g. Senior Software Engineer' : 'e.g. Portfolio Website'}
+                      value={activeEditingEntry.title}
+                      onChange={e => setActiveEditingEntry(prev => prev ? { ...prev, title: e.target.value } : null)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px] font-bold"
+                    />
+                  </div>
+
+                  {/* Subtitle */}
+                  <div className="space-y-1.5">
+                    <label className="text-zinc-450 font-black block text-[10px] uppercase tracking-wider">
+                      {activeEditingEntry.sectionId === 'experience' ? 'Company / Employer' : 'Subtitle'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={activeEditingEntry.sectionId === 'experience' ? 'e.g. Google' : 'e.g. Subtitle or tech stack summary'}
+                      value={activeEditingEntry.subtitle}
+                      onChange={e => setActiveEditingEntry(prev => prev ? { ...prev, subtitle: e.target.value } : null)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px]"
+                    />
+                  </div>
+
+                  {/* Start Date, End Date, Location */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-zinc-450 font-black block text-[10px] uppercase tracking-wider">Start Date</label>
+                      <input
+                        type="text"
+                        placeholder="MM/YYYY"
+                        value={activeEditingEntry.startDate}
+                        onChange={e => setActiveEditingEntry(prev => prev ? { ...prev, startDate: e.target.value } : null)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px] font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-zinc-450 font-black block text-[10px] uppercase tracking-wider">End Date</label>
+                      <input
+                        type="text"
+                        placeholder="MM/YYYY"
+                        value={activeEditingEntry.endDate}
+                        onChange={e => setActiveEditingEntry(prev => prev ? { ...prev, endDate: e.target.value } : null)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px] font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-zinc-450 font-black block text-[10px] uppercase tracking-wider">Location</label>
+                      <input
+                        type="text"
+                        placeholder="City, Country"
+                        value={activeEditingEntry.location}
+                        onChange={e => setActiveEditingEntry(prev => prev ? { ...prev, location: e.target.value } : null)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-zinc-300 outline-none focus:border-indigo-500 transition text-[11px]"
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : null}
+
+              {/* Description (Rich Text Editor) */}
+              <div className="space-y-1.5">
+                <label className="text-zinc-450 font-black block text-[10px] uppercase tracking-wider">Description</label>
+                <RichTextEditor
+                  value={activeEditingEntry.description}
+                  onChange={val => setActiveEditingEntry(prev => prev ? { ...prev, description: val } : null)}
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-4 border-t border-zinc-850 flex justify-center bg-zinc-900/60">
+              <button
+                type="button"
+                onClick={() => {
+                  const sectionId = activeEditingEntry.sectionId;
+                  const list = getSectionList(sectionId);
+                  const updatedEntry = {
+                    id: activeEditingEntry.entryId,
+                    title: activeEditingEntry.title,
+                    subtitle: activeEditingEntry.subtitle,
+                    startDate: activeEditingEntry.startDate,
+                    endDate: activeEditingEntry.endDate,
+                    location: activeEditingEntry.location,
+                    description: activeEditingEntry.description,
+                    link: activeEditingEntry.link,
+                    hidden: activeEditingEntry.hidden,
+                    // Map helper properties for legacy parsing support
+                    role: activeEditingEntry.title,
+                    company: activeEditingEntry.subtitle,
+                    duration: activeEditingEntry.startDate && activeEditingEntry.endDate 
+                      ? `${activeEditingEntry.startDate} - ${activeEditingEntry.endDate}`
+                      : activeEditingEntry.startDate || activeEditingEntry.endDate || ''
+                  };
+
+                  const updated = list.map((item, idx) => idx === activeEditingEntry.index ? updatedEntry : item);
+                  syncSectionList(sectionId, updated);
+                  setActiveEditingEntry(null);
+                }}
+                className="bg-gradient-to-r from-pink-600 to-rose-500 hover:opacity-95 text-white font-extrabold text-xs uppercase tracking-wider py-2.5 px-8 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-rose-500/10 active:scale-[0.98]"
+              >
+                <Check className="w-4 h-4" />
+                <span>Done</span>
+              </button>
             </div>
           </div>
         </div>

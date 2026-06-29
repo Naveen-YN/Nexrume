@@ -361,45 +361,106 @@ export const Preview: React.FC<PreviewProps> = ({
 
     switch (sectionId) {
       case 'summary':
-        if (!activeResume.summary) return null;
+        let summaryEntries: any[] = [];
+        const summaryData = activeResume.summary || '';
+        if (summaryData.trim().startsWith('[')) {
+          try {
+            summaryEntries = JSON.parse(summaryData);
+          } catch (e) {
+            summaryEntries = [];
+          }
+        } else {
+          // Parse legacy
+          const lines = summaryData.split('\n').filter(l => l.trim() !== '');
+          summaryEntries = lines.map((line, idx) => {
+            const isHidden = line.startsWith('[HIDDEN]');
+            const cleanLine = line.replace('[HIDDEN]', '').trim();
+            return {
+              id: `summary-${idx}`,
+              title: '',
+              description: cleanLine,
+              hidden: isHidden
+            };
+          });
+        }
+
+        const visibleSummary = summaryEntries.filter(s => !s.hidden);
+        if (visibleSummary.length === 0) return null;
+
         return (
           <div key="summary" className="space-y-1 text-left" style={spaceBottomStyle}>
             {renderHeading('Professional Summary', 'summary')}
-            <p className="text-zinc-650 leading-relaxed text-justify text-[11px]" style={{ fontSize: fontSizeStyle, lineHeight: lineHeightStyle }}>
-              {activeResume.summary}
-            </p>
+            <div className="space-y-1.5 flex flex-col">
+              {visibleSummary.map((sum, idx) => (
+                <div 
+                  key={idx} 
+                  className="text-zinc-650 leading-relaxed text-justify text-[11px] rich-text-content" 
+                  style={{ fontSize: fontSizeStyle, lineHeight: lineHeightStyle }} 
+                  dangerouslySetInnerHTML={{ __html: sum.description }}
+                />
+              ))}
+            </div>
           </div>
         );
 
       case 'experience':
-        const lines = (activeResume.experience || '').split('\n').filter(l => l.trim() !== '');
-        if (lines.length === 0) return null;
+        let expEntries: any[] = [];
+        const expData = activeResume.experience || '';
+        if (expData.trim().startsWith('[')) {
+          try {
+            expEntries = JSON.parse(expData);
+          } catch (e) {
+            expEntries = [];
+          }
+        } else {
+          // Parse legacy
+          const lines = expData.split('\n').filter(l => l.trim() !== '');
+          expEntries = lines.map((line, idx) => {
+            const isHidden = line.startsWith('[HIDDEN]');
+            const cleanLine = line.replace('[HIDDEN]', '').trim();
+            const match = cleanLine.match(/^(.+?)\s+at\s+(.+?)\s*\((.+?)\):\s*(.+)$/);
+            if (match) {
+              return { id: `exp-${idx}`, role: match[1].trim(), company: match[2].trim(), duration: match[3].trim(), description: match[4].trim(), hidden: isHidden };
+            }
+            return { id: `exp-${idx}`, role: '', company: '', duration: '', description: cleanLine, hidden: isHidden };
+          });
+        }
+
+        const visibleExp = expEntries.filter(e => !e.hidden);
+        if (visibleExp.length === 0) return null;
+
         return (
           <div key="experience" className="space-y-1.5 text-left" style={spaceBottomStyle}>
             {renderHeading('Work Experience', 'experience')}
             <div className="space-y-3 flex flex-col" style={{ gap: `${activeResume.entrySpacing || 6}px` }}>
-              {lines.map((line, idx) => {
-                const isHidden = line.startsWith('[HIDDEN]');
-                if (isHidden) return null;
-                const cleanLine = line.replace('[HIDDEN]', '').trim();
-                const match = cleanLine.match(/^(.+?)\s+at\s+(.+?)\s*\((.+?)\):\s*(.+)$/);
-                if (match) {
-                  return (
-                    <div key={idx} className="space-y-0.5 text-left">
-                      <div className="flex justify-between items-baseline font-bold text-zinc-850 text-[11px]" style={{ fontSize: fontSizeStyle }}>
-                        <span>
-                          {match[1].trim()}{' '}
-                          <span className="font-semibold text-zinc-500">at {match[2].trim()}</span>
-                        </span>
-                        <span className="text-[9.5px] text-zinc-500 font-normal">{match[3].trim()}</span>
-                      </div>
-                      {bulletsRenderer(match[4].trim())}
-                    </div>
-                  );
-                }
+              {visibleExp.map((exp, idx) => {
+                const durationStr = exp.duration || [exp.startDate, exp.endDate].filter(Boolean).join(' – ');
+                const rightParts = [durationStr, exp.location].filter(Boolean).join(' | ');
+                const leftText = exp.role ? `${exp.role} at ${exp.company}` : '';
+
                 return (
-                  <div key={idx} className="text-[11px] text-zinc-600" style={{ fontSize: fontSizeStyle }}>
-                    {cleanLine}
+                  <div key={idx} className="space-y-0.5 text-left">
+                    <div className="flex justify-between items-baseline font-bold text-zinc-850 text-[11px]" style={{ fontSize: fontSizeStyle }}>
+                      <span>
+                        {exp.link ? (
+                          <a href={exp.link} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-650 font-bold" style={{ color: primaryHex }}>
+                            {leftText || exp.description?.substring(0, 30)}
+                          </a>
+                        ) : (
+                          leftText || <span className="font-normal text-zinc-655">{exp.description}</span>
+                        )}
+                      </span>
+                      {rightParts && (
+                        <span className="text-[9.5px] text-zinc-550 font-normal font-mono">{rightParts}</span>
+                      )}
+                    </div>
+                    {exp.role && exp.description && (
+                      <div 
+                        className="text-zinc-655 leading-relaxed text-justify text-[10.5px] rich-text-content"
+                        style={{ fontSize: `calc(${fontSizeStyle} - 0.5px)`, lineHeight: lineHeightStyle }}
+                        dangerouslySetInnerHTML={{ __html: exp.description }}
+                      />
+                    )}
                   </div>
                 );
               })}
@@ -520,31 +581,70 @@ export const Preview: React.FC<PreviewProps> = ({
         );
 
       case 'projects':
-        const projLines = (activeResume.projects || '').split('\n').filter(l => l.trim() !== '');
-        if (projLines.length === 0) return null;
+        let projEntries: any[] = [];
+        const projData = activeResume.projects || '';
+        if (projData.trim().startsWith('[')) {
+          try {
+            projEntries = JSON.parse(projData);
+          } catch (e) {
+            projEntries = [];
+          }
+        } else {
+          // Parse legacy
+          const lines = projData.split('\n').filter(l => l.trim() !== '');
+          projEntries = lines.map((line, idx) => {
+            const isHidden = line.startsWith('[HIDDEN]');
+            const cleanLine = line.replace('[HIDDEN]', '').trim();
+            const colonIndex = cleanLine.indexOf(':');
+            if (colonIndex > 0) {
+              return {
+                id: `proj-${idx}`,
+                title: cleanLine.substring(0, colonIndex).trim(),
+                description: cleanLine.substring(colonIndex + 1).trim(),
+                hidden: isHidden
+              };
+            }
+            return { id: `proj-${idx}`, title: '', description: cleanLine, hidden: isHidden };
+          });
+        }
+
+        const visibleProj = projEntries.filter(p => !p.hidden);
+        if (visibleProj.length === 0) return null;
+
         return (
           <div key="projects" className="space-y-1.5 text-left" style={spaceBottomStyle}>
             {renderHeading('Key Projects', 'projects')}
-            <div className="space-y-2 flex flex-col" style={{ gap: `${activeResume.entrySpacing || 6}px` }}>
-              {projLines.map((line, idx) => {
-                if (line.startsWith('[HIDDEN]')) return null;
-                const cleanLine = line.replace('[HIDDEN]', '').trim();
-                const colonIndex = cleanLine.indexOf(':');
-                if (colonIndex > 0) {
-                  const title = cleanLine.substring(0, colonIndex).trim();
-                  const desc = cleanLine.substring(colonIndex + 1).trim();
-                  return (
-                    <div key={idx} className="space-y-0.5 text-left">
-                      <span className="font-bold text-zinc-850 block text-[11px]" style={{ fontSize: fontSizeStyle }}>
-                        {title}
+            <div className="space-y-3 flex flex-col" style={{ gap: `${activeResume.entrySpacing || 6}px` }}>
+              {visibleProj.map((proj, idx) => {
+                const durationStr = proj.duration || [proj.startDate, proj.endDate].filter(Boolean).join(' – ');
+                const rightParts = [durationStr, proj.location].filter(Boolean).join(' | ');
+                const leftText = proj.title || '';
+
+                return (
+                  <div key={idx} className="space-y-0.5 text-left">
+                    <div className="flex justify-between items-baseline font-bold text-zinc-855 text-[11px]" style={{ fontSize: fontSizeStyle }}>
+                      <span>
+                        {proj.link ? (
+                          <a href={proj.link} target="_blank" rel="noopener noreferrer" className="hover:underline text-indigo-650 font-bold" style={{ color: primaryHex }}>
+                            {leftText || proj.description?.substring(0, 30)}
+                          </a>
+                        ) : (
+                          leftText || <span className="font-normal text-zinc-650">{proj.description}</span>
+                        )}
                       </span>
-                      <p className="text-zinc-600 leading-relaxed text-justify text-[11px]" style={{ fontSize: fontSizeStyle, lineHeight: lineHeightStyle }}>
-                        {desc}
-                      </p>
+                      {rightParts && (
+                        <span className="text-[9.5px] text-zinc-550 font-normal font-mono">{rightParts}</span>
+                      )}
                     </div>
-                  );
-                }
-                return <div key={idx} className="text-[11px] text-zinc-650">{cleanLine}</div>;
+                    {proj.title && proj.description && (
+                      <div 
+                        className="text-zinc-655 leading-relaxed text-justify text-[10.5px] rich-text-content"
+                        style={{ fontSize: `calc(${fontSizeStyle} - 0.5px)`, lineHeight: lineHeightStyle }}
+                        dangerouslySetInnerHTML={{ __html: proj.description }}
+                      />
+                    )}
+                  </div>
+                );
               })}
             </div>
           </div>
